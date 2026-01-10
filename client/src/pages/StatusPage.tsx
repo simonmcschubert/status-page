@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import MonitorCard from '../components/MonitorCard'
-import IncidentTimeline from '../components/IncidentTimeline'
-import { fetchMonitors, fetchIncidents } from '../services/api'
-import type { Monitor, Incident } from '../types'
+import MonitorCard from '../components/MonitorCard.tsx'
+import IncidentTimeline from '../components/IncidentTimeline.tsx'
+import { fetchMonitors, fetchIncidents } from '../services/api.ts'
+import type { Monitor, Incident } from '../types/index.ts'
 
 export default function StatusPage() {
   const [monitors, setMonitors] = useState<Monitor[]>([])

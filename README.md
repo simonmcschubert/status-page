@@ -9,6 +9,7 @@ app_id: status-page
 server: personal01
 server_path: 
 license: none
+domain: status.simonschubert.com
 ---
 
 # Status Page
