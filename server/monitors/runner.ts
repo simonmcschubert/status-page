@@ -1,6 +1,9 @@
 import type { Monitor } from '../config/schemas/monitors.schema.js';
 import { HttpChecker } from './checkers/http-checker.js';
 import { TcpChecker } from './checkers/tcp-checker.js';
+import { WebSocketChecker } from './checkers/websocket-checker.js';
+import { DnsChecker } from './checkers/dns-checker.js';
+import { PingChecker } from './checkers/ping-checker.js';
 import { ConditionEvaluator } from './condition-evaluator.js';
 import type { CheckResult } from './checkers/http-checker.js';
 
@@ -29,33 +32,15 @@ export class MonitorRunner {
         break;
       
       case 'websocket':
-        // TODO: Implement WebSocket checker
-        checkResult = {
-          success: false,
-          responseTime: 0,
-          context: { ERROR: 'WebSocket checker not implemented yet', TIMESTAMP: new Date().toISOString() },
-          error: 'Not implemented',
-        };
+        checkResult = await WebSocketChecker.check(monitor.url);
         break;
       
       case 'dns':
-        // TODO: Implement DNS checker
-        checkResult = {
-          success: false,
-          responseTime: 0,
-          context: { ERROR: 'DNS checker not implemented yet', TIMESTAMP: new Date().toISOString() },
-          error: 'Not implemented',
-        };
+        checkResult = await DnsChecker.check(monitor.url);
         break;
       
       case 'ping':
-        // TODO: Implement ICMP ping checker
-        checkResult = {
-          success: false,
-          responseTime: 0,
-          context: { ERROR: 'Ping checker not implemented yet', TIMESTAMP: new Date().toISOString() },
-          error: 'Not implemented',
-        };
+        checkResult = await PingChecker.check(monitor.url);
         break;
       
       default:

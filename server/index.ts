@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { ConfigLoader } from './config/loader.js';
 import { MonitorRunner } from './monitors/runner.js';
+import { scheduleMonitors, reloadMonitors, shutdownQueue } from './queue/monitor-queue.js';
 
 dotenv.config();
 
@@ -91,9 +92,49 @@ app.post('/api/test-check', async (req, res) => {
   }
 });
 
+// Reload monitors endpoint
+app.post('/api/reload-monitors', async (req, res) => {
+  try {
+    ConfigLoader.reloadConfigs();
+    appConfig = ConfigLoader.loadAppConfig();
+    monitorsConfig = ConfigLoader.loadMonitorsConfig();
+    await reloadMonitors();
+    res.json({ 
+      message: 'Monitors reloaded successfully',
+      count: monitorsConfig.monitors.length
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to reload monitors';
+    res.status(500).json({ error: message });
+  }
+});
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Status Page server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🧪 Test checks: POST http://localhost:${PORT}/api/test-check`);
+  
+  // Schedule monitor checks with BullMQ
+  if (monitorsConfig) {
+    try {
+      await scheduleMonitors();
+      console.log(`⏰ Scheduled ${monitorsConfig.monitors.length} monitors with BullMQ`);
+    } catch (error) {
+      console.error('❌ Failed to schedule monitors:', error);
+    }
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 SIGTERM received, shutting down gracefully...');
+  await shutdownQueue();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('\n🛑 SIGINT received, shutting down gracefully...');
+  await shutdownQueue();
+  process.exit(0);
 });
