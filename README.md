@@ -29,11 +29,21 @@ Public status page will be available at `status.simonschubert.com`
 
 ## Tech Stack
 
-- **Backend**: Node.js + Express + TypeScript
+### Backend
+- **Runtime**: Node.js 20+ with TypeScript
+- **Framework**: Express
 - **Job Queue**: BullMQ (Redis-backed)
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL 16
+- **Cache**: Redis 7
 - **Config**: YAML with Zod validation
 - **Condition Engine**: JSONPath Plus + custom DSL parser
+
+### Frontend
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Routing**: React Router
+- **Styling**: CSS Variables (dark mode support)
+- **Charts**: Recharts (planned)
 
 ## Getting Started
 
@@ -74,12 +84,17 @@ cp config/monitors.example.yml config/monitors.yml
 npm run db:migrate
 ```
 
-6. Start development server:
+6. Start development servers:
 ```bash
+# Terminal 1: Backend
 npm run dev
+
+# Terminal 2: Frontend
+cd client && npm run dev
 ```
 
-The server will start at `http://localhost:3000`
+- Backend: `http://localhost:3000`
+- Frontend: `http://localhost:5173`
 
 ### Using Docker
 
@@ -99,8 +114,55 @@ Configure branding, notifications, and UI preferences.
 
 Define services to monitor with conditions and maintenance windows.
 
+## API Endpoints
+
+- `GET /health` - Health check
+- `GET /api/config` - App configuration
+- `GET /api/monitors` - Public monitors
+- `GET /api/status` - Current status (runs all checks)
+- `GET /api/incidents` - Incident history
+- `GET /api/monitors/:id/stats` - Monitor statistics
+- `POST /api/test-check` - Manual check trigger
+- `POST /api/reload-monitors` - Reload configuration
+
+## Project Structure
+
+```
+status-page/
+├── server/               # Backend application
+│   ├── config/          # Configuration loaders and Zod schemas
+│   ├── db/              # Database connection and migrations
+│   ├── monitors/        # Monitor checkers and condition evaluator
+│   │   └── checkers/   # Protocol-specific checkers (HTTP, TCP, WebSocket, DNS, Ping)
+│   ├── queue/          # BullMQ job queue setup
+│   ├── repositories/   # Data access layer (checks, incidents, history)
+│   └── services/       # Business logic (incident detection)
+├── client/              # Frontend React application
+│   └── src/
+│       ├── components/ # MonitorCard, IncidentTimeline
+│       ├── pages/      # StatusPage
+│       ├── services/   # API client
+│       └── styles/     # CSS with theme variables
+├── config/              # Configuration files
+│   ├── config.yml      # App settings
+│   └── monitors.yml    # Monitor definitions
+└── docker-compose.yml   # Docker setup
+```
+
 ## Development Status
 
 🚧 **In Progress** - Active development
+
+### Completed
+- ✅ All protocol checkers (HTTP, TCP, WebSocket, DNS, Ping)
+- ✅ BullMQ job queue with automated scheduling
+- ✅ Database persistence and incident detection
+- ✅ React frontend with dark mode
+- ✅ Monitor cards and incident timeline
+
+### In Progress
+- 🟡 Charts for uptime and response time
+- 🟡 Server-Sent Events for real-time updates
+- 🟡 Badges API
 
 See [plan.md](./plan.md) for the complete technical design and roadmap.
