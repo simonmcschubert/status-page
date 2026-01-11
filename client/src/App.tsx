@@ -1,18 +1,15 @@
 import { Routes, Route } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import StatusPage from './pages/StatusPage'
 import './styles/App.css'
 
 function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
-
   useEffect(() => {
     // Always follow system preference
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     
     const updateTheme = (e: MediaQueryListEvent | MediaQueryList) => {
       const newTheme = e.matches ? 'dark' : 'light'
-      setTheme(newTheme)
       document.documentElement.setAttribute('data-theme', newTheme)
     }
     
