@@ -38,7 +38,9 @@ CREATE TABLE IF NOT EXISTS incidents (
   started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   resolved_at TIMESTAMP,
   status VARCHAR(50) NOT NULL,
-  details TEXT,
+  severity VARCHAR(20) DEFAULT 'major',
+  title VARCHAR(255),
+  description TEXT,
   suppressed_by_maintenance BOOLEAN DEFAULT false
 );
 
