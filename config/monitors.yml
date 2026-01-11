@@ -1,0 +1,10 @@
+monitors:
+  - name: simonschubert.com
+    group: "Core Services"
+    url: https://simonschubert.com/
+    type: http
+    interval: 60
+    public: true
+    conditions:
+      - "[STATUS] == 200"
+      - "[RESPONSE_TIME] < 500"
