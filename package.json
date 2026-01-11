@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch server/index.ts",
-    "build": "tsc && vite build",
+    "build": "tsc",
     "start": "node dist/server/index.js",
     "db:migrate": "tsx server/db/migrate.ts",
     "lint": "eslint . --ext .ts,.tsx",
