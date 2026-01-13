@@ -7,8 +7,10 @@ export interface Monitor {
   public: boolean
   currentStatus?: 'up' | 'down' | 'degraded' | 'unknown'
   uptime?: number
-  avgResponseTime?: number
+  avgResponseTime?: number | string
   uptimeHistory?: { date: string; uptime: number }[]
+  responseTimeHistory?: { timestamp: string; avgResponseTime: number; minResponseTime: number; maxResponseTime: number }[]
+  recentChecks?: { timestamp: string; responseTime: number; success: boolean }[]
 }
 
 export interface Incident {

@@ -121,4 +121,60 @@ export class CheckRepository {
     const result = await pool.query(query, [monitorId]);
     return result.rows[0] || null;
   }
+
+  /**
+   * Get response time history for a monitor (aggregated by hour or day)
+   */
+  static async getResponseTimeHistory(
+    monitorId: number,
+    periodDays: number = 30,
+    granularity: 'hour' | 'day' = 'day'
+  ): Promise<{ timestamp: string; avgResponseTime: number; minResponseTime: number; maxResponseTime: number }[]> {
+    const truncate = granularity === 'hour' ? 'hour' : 'day';
+    const query = `
+      SELECT 
+        DATE_TRUNC('${truncate}', checked_at) as timestamp,
+        AVG(response_time_ms)::numeric(10,2) as avg_response_time,
+        MIN(response_time_ms) as min_response_time,
+        MAX(response_time_ms) as max_response_time
+      FROM checks
+      WHERE 
+        monitor_id = $1
+        AND success = true
+        AND checked_at > NOW() - INTERVAL '${periodDays} days'
+      GROUP BY DATE_TRUNC('${truncate}', checked_at)
+      ORDER BY timestamp ASC
+    `;
+    
+    const result = await pool.query(query, [monitorId]);
+    return result.rows.map(row => ({
+      timestamp: row.timestamp.toISOString(),
+      avgResponseTime: parseFloat(row.avg_response_time),
+      minResponseTime: row.min_response_time,
+      maxResponseTime: row.max_response_time,
+    }));
+  }
+
+  /**
+   * Get recent check results with response times
+   */
+  static async getRecentResponseTimes(
+    monitorId: number,
+    limit: number = 100
+  ): Promise<{ timestamp: string; responseTime: number; success: boolean }[]> {
+    const query = `
+      SELECT checked_at, response_time_ms, success
+      FROM checks
+      WHERE monitor_id = $1
+      ORDER BY checked_at DESC
+      LIMIT $2
+    `;
+    
+    const result = await pool.query(query, [monitorId, limit]);
+    return result.rows.map(row => ({
+      timestamp: row.checked_at.toISOString(),
+      responseTime: row.response_time_ms,
+      success: row.success,
+    })).reverse(); // Return in chronological order
+  }
 }

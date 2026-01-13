@@ -93,12 +93,24 @@ export function MonitorDetailPage() {
     ? parseFloat(monitor.avgResponseTime) 
     : (monitor.avgResponseTime ?? 0);
 
-  // Generate mock response time data for chart
-  const responseTimeData = Array.from({ length: 30 }, () => ({
-    value: Math.max(50, avgResponseTime + (Math.random() - 0.5) * 100)
-  }));
+  // Use real response time data from recent checks, or fallback to history
+  const responseTimeData = monitor.recentChecks && monitor.recentChecks.length > 0
+    ? monitor.recentChecks.slice(-50).map(check => ({
+        value: check.responseTime,
+        timestamp: check.timestamp,
+        success: check.success,
+      }))
+    : monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
+    ? monitor.responseTimeHistory.map(h => ({
+        value: h.avgResponseTime,
+        timestamp: h.timestamp,
+        success: true,
+      }))
+    : [];
 
-  const maxResponseTime = Math.max(...responseTimeData.map(d => d.value));
+  const maxResponseTime = responseTimeData.length > 0 
+    ? Math.max(...responseTimeData.map(d => d.value), 1)
+    : 100;
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -172,22 +184,35 @@ export function MonitorDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-end gap-1 h-24 mb-4">
-              {responseTimeData.map((data, index) => (
-                <div
-                  key={index}
-                  className="flex-1 bg-primary/60 hover:bg-primary rounded-t transition-colors cursor-default"
-                  style={{
-                    height: `${(data.value / maxResponseTime) * 100}%`
-                  }}
-                  title={`${data.value.toFixed(0)}ms`}
-                />
-              ))}
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
-              <span>Last 30 days</span>
-            </div>
+            {responseTimeData.length > 0 ? (
+              <>
+                <div className="flex items-end gap-[2px] h-24 mb-4">
+                  {responseTimeData.map((data, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        "flex-1 rounded-t transition-colors cursor-default min-w-[2px]",
+                        data.success 
+                          ? "bg-primary/60 hover:bg-primary" 
+                          : "bg-destructive/60 hover:bg-destructive"
+                      )}
+                      style={{
+                        height: `${Math.max((data.value / maxResponseTime) * 100, 5)}%`
+                      }}
+                      title={`${new Date(data.timestamp).toLocaleString()}: ${data.value.toFixed(0)}ms`}
+                    />
+                  ))}
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
+                  <span>Last {responseTimeData.length} checks</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-24 text-muted-foreground">
+                No response time data available yet
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -111,6 +111,8 @@ app.get('/api/monitors/:id', async (req, res) => {
     const avgResponseTime = await CheckRepository.getAverageResponseTime(monitorId, 30);
     const history = await StatusHistoryRepository.getHistory(monitorId, 90);
     const latestCheck = await CheckRepository.getLatestCheck(monitorId);
+    const responseTimeHistory = await CheckRepository.getResponseTimeHistory(monitorId, 30, 'day');
+    const recentChecks = await CheckRepository.getRecentResponseTimes(monitorId, 100);
     
     res.json({
       ...monitor,
@@ -121,6 +123,8 @@ app.get('/api/monitors/:id', async (req, res) => {
         date: h.date,
         uptime: h.uptimePercentage,
       })),
+      responseTimeHistory,
+      recentChecks,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch monitor';
