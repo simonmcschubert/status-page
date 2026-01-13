@@ -97,6 +97,7 @@ export function MonitorDetailPage() {
     : (monitor.avgResponseTime ?? 0);
 
   // Use 90-day aggregated history for the chart (prefer daily data over individual checks)
+  // Use aggregated history if available, otherwise fall back to recent SUCCESSFUL checks only
   const responseTimeData = monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
     ? monitor.responseTimeHistory.map(h => ({
         value: h.avgResponseTime,
@@ -106,13 +107,16 @@ export function MonitorDetailPage() {
         maxValue: h.maxResponseTime,
       }))
     : monitor.recentChecks && monitor.recentChecks.length > 0
-    ? monitor.recentChecks.slice(-90).map(check => ({
-        value: check.responseTime,
-        timestamp: check.timestamp,
-        success: check.success,
-        minValue: check.responseTime,
-        maxValue: check.responseTime,
-      }))
+    ? monitor.recentChecks
+        .filter(check => check.success) // Only include successful checks
+        .slice(-90)
+        .map(check => ({
+          value: check.responseTime,
+          timestamp: check.timestamp,
+          success: check.success,
+          minValue: check.responseTime,
+          maxValue: check.responseTime,
+        }))
     : [];
 
   const maxResponseTime = responseTimeData.length > 0 
@@ -243,7 +247,12 @@ export function MonitorDetailPage() {
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
-                  <span>Last {responseTimeData.length} days</span>
+                  <span>
+                    {monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
+                      ? `Last ${responseTimeData.length} days`
+                      : `${responseTimeData.length} successful checks`
+                    }
+                  </span>
                 </div>
               </>
             ) : (
