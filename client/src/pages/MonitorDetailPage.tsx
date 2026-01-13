@@ -89,7 +89,9 @@ export function MonitorDetailPage() {
   };
 
   const uptimePercent = monitor.uptime ?? 100;
-  const avgResponseTime = monitor.avgResponseTime ?? 0;
+  const avgResponseTime = typeof monitor.avgResponseTime === 'string' 
+    ? parseFloat(monitor.avgResponseTime) 
+    : (monitor.avgResponseTime ?? 0);
 
   // Generate mock response time data for chart
   const responseTimeData = Array.from({ length: 30 }, () => ({
