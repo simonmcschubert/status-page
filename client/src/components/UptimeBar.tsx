@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
+import { cn } from '../lib/utils';
 
 interface UptimeBarProps {
   uptimeHistory?: { date: string; uptime: number }[];
   days?: number;
+  className?: string;
 }
 
 interface DayData {
@@ -11,7 +13,7 @@ interface DayData {
   status: 'up' | 'degraded' | 'down' | 'no-data';
 }
 
-export function UptimeBar({ uptimeHistory, days = 90 }: UptimeBarProps) {
+export function UptimeBar({ uptimeHistory, days = 90, className }: UptimeBarProps) {
   const barData = useMemo((): DayData[] => {
     // Generate the last N days
     const result: DayData[] = [];
@@ -54,15 +56,19 @@ export function UptimeBar({ uptimeHistory, days = 90 }: UptimeBarProps) {
   };
 
   return (
-    <div className="uptime-bars" title="90 day uptime history">
+    <div className={cn("flex items-center gap-[2px] h-8", className)}>
       {barData.map((day) => (
         <div
           key={day.date}
-          className={`uptime-bar ${day.status === 'degraded' ? 'degraded' : ''} ${day.status === 'down' ? 'down' : ''} ${day.status === 'no-data' ? 'no-data' : ''}`}
+          className={cn(
+            "flex-1 rounded-sm transition-all hover:opacity-80 cursor-pointer min-w-[2px]",
+            day.status === 'up' && "bg-green-500",
+            day.status === 'degraded' && "bg-yellow-500",
+            day.status === 'down' && "bg-red-500",
+            day.status === 'no-data' && "bg-muted h-1/3"
+          )}
+          style={{ height: day.status === 'no-data' ? '33%' : '100%' }}
           title={`${formatDate(day.date)}: ${day.uptime.toFixed(2)}%`}
-          style={{
-            height: day.status === 'no-data' ? '30%' : '100%'
-          }}
         />
       ))}
     </div>

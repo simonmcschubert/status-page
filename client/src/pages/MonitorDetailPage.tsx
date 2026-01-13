@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, Clock, Activity, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import type { Monitor } from '../types';
 import { UptimeBar } from '../components/UptimeBar';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Skeleton } from '../components/ui/skeleton';
+import { cn } from '../lib/utils';
 
 export function MonitorDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,25 +35,57 @@ export function MonitorDetailPage() {
 
   if (loading) {
     return (
-      <div className="container">
-        <div className="loading">Loading...</div>
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
       </div>
     );
   }
 
   if (error || !monitor) {
     return (
-      <div className="container section">
-        <Link to="/" className="back-link">← Back to Status</Link>
-        <div className="error">{error || 'Monitor not found'}</div>
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-4xl mx-auto">
+          <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Status
+          </Link>
+          <Card className="border-destructive">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-destructive">
+                <XCircle className="h-5 w-5" />
+                <span>{error || 'Monitor not found'}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
-  const getStatusClass = () => {
-    if (monitor.currentStatus === 'down') return 'down';
-    if (monitor.currentStatus === 'degraded') return 'degraded';
-    return '';
+  const getStatusVariant = (): 'success' | 'destructive' | 'warning' => {
+    if (monitor.currentStatus === 'down') return 'destructive';
+    if (monitor.currentStatus === 'degraded') return 'warning';
+    return 'success';
+  };
+
+  const getStatusIcon = () => {
+    if (monitor.currentStatus === 'down') return <XCircle className="h-5 w-5" />;
+    if (monitor.currentStatus === 'degraded') return <AlertTriangle className="h-5 w-5" />;
+    return <CheckCircle className="h-5 w-5" />;
+  };
+
+  const getStatusText = () => {
+    if (monitor.currentStatus === 'down') return 'Down';
+    if (monitor.currentStatus === 'degraded') return 'Degraded';
+    return 'Operational';
   };
 
   const uptimePercent = monitor.uptime ?? 100;
@@ -62,71 +99,134 @@ export function MonitorDetailPage() {
   const maxResponseTime = Math.max(...responseTimeData.map(d => d.value));
 
   return (
-    <div className="section">
-      <div className="container">
-        <Link to="/" className="back-link">← Back to Status</Link>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Status
+        </Link>
         
-        <div className="detail-header">
-          <div className="detail-header-top">
-            <div className={`detail-indicator ${getStatusClass()}`}></div>
-            <h1 className="detail-title">
-              {monitor.name} is{' '}
-              <span className={getStatusClass()}>
-                {monitor.currentStatus === 'up' ? 'Operational' : 
-                 monitor.currentStatus === 'degraded' ? 'Degraded' : 'Down'}
+        {/* Header Card */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "p-2 rounded-full",
+                    monitor.currentStatus === 'up' && "bg-success/10 text-success",
+                    monitor.currentStatus === 'degraded' && "bg-warning/10 text-warning",
+                    monitor.currentStatus === 'down' && "bg-destructive/10 text-destructive"
+                  )}>
+                    {getStatusIcon()}
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-semibold text-foreground">
+                      {monitor.name}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">{monitor.url}</p>
+                  </div>
+                </div>
+              </div>
+              <Badge variant={getStatusVariant()} className="text-sm px-3 py-1">
+                {getStatusText()}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Uptime Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Activity className="h-5 w-5 text-muted-foreground" />
+              Overall Uptime
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Last 90 days</span>
+              <span className={cn(
+                "text-2xl font-bold",
+                uptimePercent >= 99.9 ? "text-success" :
+                uptimePercent >= 99 ? "text-warning" : "text-destructive"
+              )}>
+                {uptimePercent.toFixed(2)}%
               </span>
-            </h1>
-          </div>
-          <p className="detail-subtitle">{monitor.url}</p>
-        </div>
-
-        <div className="detail-section">
-          <h3 className="section-title">Overall Uptime</h3>
-          <div className="detail-uptime-percent" style={{ marginTop: '1rem' }}>
-            Last 90 days: {uptimePercent.toFixed(2)}%
-          </div>
-          <div className="detail-uptime-bar">
+            </div>
             <UptimeBar uptimeHistory={monitor.uptimeHistory} days={90} />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="detail-section">
-          <h3 className="section-title">Response Time</h3>
-          <div className="response-time-chart">
-            {responseTimeData.map((data, index) => (
-              <div
-                key={index}
-                className="response-bar"
-                style={{
-                  height: `${(data.value / maxResponseTime) * 100}%`
-                }}
-                title={`${data.value.toFixed(0)}ms`}
-              />
-            ))}
-          </div>
-          <div className="response-stats">
-            <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
-            <span>Last 30 days</span>
-          </div>
-        </div>
+        {/* Response Time Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              Response Time
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-1 h-24 mb-4">
+              {responseTimeData.map((data, index) => (
+                <div
+                  key={index}
+                  className="flex-1 bg-primary/60 hover:bg-primary rounded-t transition-colors cursor-default"
+                  style={{
+                    height: `${(data.value / maxResponseTime) * 100}%`
+                  }}
+                  title={`${data.value.toFixed(0)}ms`}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
+              <span>Last 30 days</span>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="uptime-stats">
-          <div className="uptime-stat">
-            <div className="uptime-stat-value">{uptimePercent.toFixed(2)}%</div>
-            <div className="uptime-stat-label">Overall Uptime</div>
-          </div>
-          <div className="uptime-stat">
-            <div className="uptime-stat-value">{avgResponseTime.toFixed(0)}ms</div>
-            <div className="uptime-stat-label">Avg Response</div>
-          </div>
-          <div className="uptime-stat">
-            <div className="uptime-stat-value">{monitor.interval || 60}s</div>
-            <div className="uptime-stat-label">Check Interval</div>
-          </div>
-          <div className="uptime-stat">
-            <div className="uptime-stat-value">{monitor.type.toUpperCase()}</div>
-            <div className="uptime-stat-label">Monitor Type</div>
-          </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <div className={cn(
+                "text-2xl font-bold",
+                uptimePercent >= 99.9 ? "text-success" :
+                uptimePercent >= 99 ? "text-warning" : "text-destructive"
+              )}>
+                {uptimePercent.toFixed(2)}%
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Overall Uptime</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <div className="text-2xl font-bold text-foreground">
+                {avgResponseTime.toFixed(0)}ms
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Avg Response</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <div className="text-2xl font-bold text-foreground">
+                {monitor.interval || 60}s
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Check Interval</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <div className="text-2xl font-bold text-foreground uppercase">
+                {monitor.type}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Monitor Type</div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

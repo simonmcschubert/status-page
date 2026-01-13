@@ -1,8 +1,8 @@
 import { Routes, Route, Link } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Activity } from 'lucide-react'
 import StatusPage from './pages/StatusPage'
 import { MonitorDetailPage } from './pages/MonitorDetailPage'
-import './styles/App.css'
 
 function App() {
   useEffect(() => {
@@ -24,25 +24,31 @@ function App() {
   }, [])
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="container">
-          <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <h1>Status Page</h1>
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-sm">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 text-foreground hover:text-primary transition-colors"
+          >
+            <Activity className="h-6 w-6" />
+            <h1 className="text-xl font-semibold">Status Page</h1>
           </Link>
         </div>
       </header>
 
-      <main className="app-main">
+      <main className="flex-1">
         <Routes>
           <Route path="/" element={<StatusPage />} />
           <Route path="/monitor/:id" element={<MonitorDetailPage />} />
         </Routes>
       </main>
 
-      <footer className="app-footer">
-        <div className="container">
-          <p>Powered by Status Page</p>
+      <footer className="border-t border-border bg-card">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <p className="text-sm text-muted-foreground text-center">
+            Powered by Status Page
+          </p>
         </div>
       </footer>
     </div>
