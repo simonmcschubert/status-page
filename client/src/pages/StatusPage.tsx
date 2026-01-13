@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { CheckCircle, XCircle, AlertTriangle, Activity, Server, AlertCircle } from 'lucide-react'
 import { MonitorRow } from '../components/MonitorRow'
 import IncidentTimeline from '../components/IncidentTimeline'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Skeleton } from '../components/ui/skeleton'
 import { fetchMonitors, fetchIncidents } from '../services/api'
+import { useSmartPolling } from '../hooks/useSmartPolling'
 import { cn } from '../lib/utils'
 import type { Monitor, Incident } from '../types'
 
@@ -14,13 +15,12 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadData()
-    
-    // Refresh every 30 seconds
-    const interval = setInterval(loadData, 30000)
-    return () => clearInterval(interval)
-  }, [])
+  // Smart polling: 10s when active, 60s when tab hidden
+  useSmartPolling({
+    onPoll: loadData,
+    activeInterval: 10000,
+    inactiveInterval: 60000,
+  })
 
   const loadData = async () => {
     try {

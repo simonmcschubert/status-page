@@ -200,11 +200,10 @@ This runs Ansible playbooks that:
 - ✅ Daily historical data aggregation
 - ✅ Monitor detail pages
 - ✅ Ansible deployment
+- ✅ Scheduled maintenance windows
 
 ### Planned
-- 🟡 Server-Sent Events for real-time updates
 - 🟡 Email/webhook notifications
-- 🟡 Scheduled maintenance windows
 - 🟡 Public badges API
 
 ## License

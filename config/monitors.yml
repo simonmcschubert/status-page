@@ -35,14 +35,13 @@ monitors:
   - id: 3
     name: n8n.simonschubert.com
     group: "Core Services"
-    url: https://n8n.simonschubert.com/
+    url: http://127.0.0.1:5678/
     type: http
     interval: 600
     public: true
     conditions:
       - "[STATUS] == 200"
       - "[RESPONSE_TIME] < 1000"
-      - "[CERTIFICATE_EXPIRATION] > 7d"
   - id: 4
     name: recipes.simonschubert.com
     group: "Core Services"

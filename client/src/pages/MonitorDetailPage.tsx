@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Clock, Activity, CheckCircle, XCircle, AlertTriangle, Bell, AlertCircle, Wrench } from 'lucide-react';
 import type { Monitor } from '../types';
@@ -6,6 +6,7 @@ import { UptimeBar } from '../components/UptimeBar';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
+import { useSmartPolling } from '../hooks/useSmartPolling';
 import { cn } from '../lib/utils';
 
 export function MonitorDetailPage() {
@@ -14,24 +15,27 @@ export function MonitorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchMonitor() {
-      try {
-        const response = await fetch(`/api/monitors/${id}`);
-        if (!response.ok) {
-          throw new Error('Monitor not found');
-        }
-        const data = await response.json();
-        setMonitor(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load monitor');
-      } finally {
-        setLoading(false);
+  async function fetchMonitor() {
+    try {
+      const response = await fetch(`/api/monitors/${id}`);
+      if (!response.ok) {
+        throw new Error('Monitor not found');
       }
+      const data = await response.json();
+      setMonitor(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load monitor');
+    } finally {
+      setLoading(false);
     }
+  }
 
-    fetchMonitor();
-  }, [id]);
+  // Smart polling: 10s when active, 60s when tab hidden
+  useSmartPolling({
+    onPoll: fetchMonitor,
+    activeInterval: 10000,
+    inactiveInterval: 60000,
+  });
 
   if (loading) {
     return (
