@@ -15,13 +15,6 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Smart polling: 10s when active, 60s when tab hidden
-  useSmartPolling({
-    onPoll: loadData,
-    activeInterval: 10000,
-    inactiveInterval: 60000,
-  })
-
   const loadData = async () => {
     try {
       const [monitorsData, incidentsData] = await Promise.all([
@@ -38,6 +31,13 @@ export default function StatusPage() {
       setLoading(false)
     }
   }
+
+  // Smart polling: 10s when active, 60s when tab hidden
+  useSmartPolling({
+    onPoll: loadData,
+    activeInterval: 10000,
+    inactiveInterval: 60000,
+  })
 
   if (loading) {
     return (
