@@ -28,13 +28,18 @@ export function UptimeBar({ uptimeHistory, days = 90, className }: UptimeBarProp
       const historyEntry = uptimeHistory?.find(h => h.date === dateStr);
       
       if (historyEntry) {
+        // Parse uptime as number in case it's a string
+        const uptimeValue = typeof historyEntry.uptime === 'string' 
+          ? parseFloat(historyEntry.uptime) 
+          : historyEntry.uptime;
+        
         let status: 'up' | 'degraded' | 'down' = 'up';
-        if (historyEntry.uptime < 99) status = 'degraded';
-        if (historyEntry.uptime < 90) status = 'down';
+        if (uptimeValue < 99) status = 'degraded';
+        if (uptimeValue < 90) status = 'down';
         
         result.push({
           date: dateStr,
-          uptime: historyEntry.uptime,
+          uptime: uptimeValue,
           status
         });
       } else {
