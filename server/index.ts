@@ -9,6 +9,7 @@ import { scheduleMonitors, reloadMonitors, shutdownQueue } from './queue/monitor
 import { IncidentRepository } from './repositories/incident-repository.js';
 import { CheckRepository } from './repositories/check-repository.js';
 import { StatusHistoryRepository } from './repositories/status-history-repository.js';
+import { MonitorRepository } from './repositories/monitor-repository.js';
 
 dotenv.config();
 
@@ -234,6 +235,7 @@ app.post('/api/admin/aggregate-status', async (req, res) => {
 app.post('/api/admin/reload-monitors', async (req, res) => {
   try {
     monitorsConfig = ConfigLoader.loadMonitorsConfig();
+    await MonitorRepository.syncMonitors(monitorsConfig.monitors);
     await reloadMonitors();
     res.json({ 
       message: 'Monitors reloaded successfully',
@@ -256,9 +258,10 @@ app.listen(PORT, async () => {
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🧪 Test checks: POST http://localhost:${PORT}/api/test-check`);
   
-  // Schedule monitor checks with BullMQ
+  // Sync monitors from config to database, then schedule checks
   if (monitorsConfig) {
     try {
+      await MonitorRepository.syncMonitors(monitorsConfig.monitors);
       await scheduleMonitors();
       console.log(`⏰ Scheduled ${monitorsConfig.monitors.length} monitors with BullMQ`);
     } catch (error) {
