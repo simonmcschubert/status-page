@@ -10,6 +10,7 @@ import { IncidentRepository } from './repositories/incident-repository.js';
 import { CheckRepository } from './repositories/check-repository.js';
 import { StatusHistoryRepository } from './repositories/status-history-repository.js';
 import { MonitorRepository } from './repositories/monitor-repository.js';
+import { scheduleDailyAggregation, scheduleHourlyAggregation, backfillHistoryOnStartup } from './jobs/daily-aggregation.js';
 
 dotenv.config();
 
@@ -268,6 +269,13 @@ app.listen(PORT, async () => {
       await MonitorRepository.syncMonitors(monitorsConfig.monitors);
       await scheduleMonitors();
       console.log(`⏰ Scheduled ${monitorsConfig.monitors.length} monitors with BullMQ`);
+      
+      // Backfill any missing historical data
+      await backfillHistoryOnStartup();
+      
+      // Schedule daily and hourly aggregation jobs
+      scheduleDailyAggregation();
+      scheduleHourlyAggregation();
     } catch (error) {
       console.error('❌ Failed to schedule monitors:', error);
     }

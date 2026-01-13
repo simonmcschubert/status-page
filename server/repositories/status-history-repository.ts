@@ -98,4 +98,54 @@ export class StatusHistoryRepository {
       await this.aggregateDailyStatus(row.monitor_id, dateStr);
     }
   }
+
+  /**
+   * Backfill historical data for all monitors for the past N days
+   */
+  static async backfillHistory(days: number = 90): Promise<number> {
+    let aggregatedCount = 0;
+    
+    // Get all unique monitor IDs and dates that have checks but no history
+    const query = `
+      SELECT DISTINCT c.monitor_id, DATE(c.checked_at) as check_date
+      FROM checks c
+      LEFT JOIN status_history sh 
+        ON c.monitor_id = sh.monitor_id 
+        AND DATE(c.checked_at) = sh.date
+      WHERE 
+        c.checked_at > CURRENT_DATE - INTERVAL '${days} days'
+        AND DATE(c.checked_at) < CURRENT_DATE  -- Don't aggregate today (incomplete)
+        AND sh.id IS NULL
+      ORDER BY check_date
+    `;
+    
+    const result = await pool.query(query);
+    
+    for (const row of result.rows) {
+      const dateStr = row.check_date.toISOString().split('T')[0];
+      await this.aggregateDailyStatus(row.monitor_id, dateStr);
+      aggregatedCount++;
+    }
+    
+    return aggregatedCount;
+  }
+
+  /**
+   * Aggregate today's data (for real-time updates)
+   */
+  static async aggregateToday(): Promise<void> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const monitorsQuery = `
+      SELECT DISTINCT monitor_id
+      FROM checks
+      WHERE DATE(checked_at) = CURRENT_DATE
+    `;
+    
+    const result = await pool.query(monitorsQuery);
+    
+    for (const row of result.rows) {
+      await this.aggregateDailyStatus(row.monitor_id, today);
+    }
+  }
 }

@@ -93,18 +93,22 @@ export function MonitorDetailPage() {
     ? parseFloat(monitor.avgResponseTime) 
     : (monitor.avgResponseTime ?? 0);
 
-  // Use real response time data from recent checks, or fallback to history
-  const responseTimeData = monitor.recentChecks && monitor.recentChecks.length > 0
-    ? monitor.recentChecks.slice(-50).map(check => ({
-        value: check.responseTime,
-        timestamp: check.timestamp,
-        success: check.success,
-      }))
-    : monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
+  // Use 90-day aggregated history for the chart (prefer daily data over individual checks)
+  const responseTimeData = monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
     ? monitor.responseTimeHistory.map(h => ({
         value: h.avgResponseTime,
         timestamp: h.timestamp,
         success: true,
+        minValue: h.minResponseTime,
+        maxValue: h.maxResponseTime,
+      }))
+    : monitor.recentChecks && monitor.recentChecks.length > 0
+    ? monitor.recentChecks.slice(-90).map(check => ({
+        value: check.responseTime,
+        timestamp: check.timestamp,
+        success: check.success,
+        minValue: check.responseTime,
+        maxValue: check.responseTime,
       }))
     : [];
 
@@ -187,25 +191,33 @@ export function MonitorDetailPage() {
             {responseTimeData.length > 0 ? (
               <>
                 <div className="flex items-end gap-[2px] h-24 mb-4">
-                  {responseTimeData.map((data, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        "flex-1 rounded-t transition-colors cursor-default min-w-[2px]",
-                        data.success 
-                          ? "bg-primary/60 hover:bg-primary" 
-                          : "bg-destructive/60 hover:bg-destructive"
-                      )}
-                      style={{
-                        height: `${Math.max((data.value / maxResponseTime) * 100, 5)}%`
-                      }}
-                      title={`${new Date(data.timestamp).toLocaleString()}: ${data.value.toFixed(0)}ms`}
-                    />
-                  ))}
+                  {responseTimeData.map((data, index) => {
+                    const date = new Date(data.timestamp);
+                    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const tooltipText = data.minValue !== data.maxValue
+                      ? `${dateStr}: Avg ${data.value.toFixed(0)}ms (${data.minValue}-${data.maxValue}ms)`
+                      : `${dateStr}: ${data.value.toFixed(0)}ms`;
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex-1 rounded-t transition-colors cursor-default min-w-[2px]",
+                          data.success 
+                            ? "bg-primary/60 hover:bg-primary" 
+                            : "bg-destructive/60 hover:bg-destructive"
+                        )}
+                        style={{
+                          height: `${Math.max((data.value / maxResponseTime) * 100, 5)}%`
+                        }}
+                        title={tooltipText}
+                      />
+                    );
+                  })}
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
-                  <span>Last {responseTimeData.length} checks</span>
+                  <span>Last {responseTimeData.length} days</span>
                 </div>
               </>
             ) : (

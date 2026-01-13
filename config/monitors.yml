@@ -4,7 +4,7 @@ monitors:
     group: "Core Services"
     url: https://simonschubert.com/
     type: http
-    interval: 60
+    interval: 300
     public: true
     conditions:
       - "[STATUS] == 200"
@@ -14,7 +14,7 @@ monitors:
     group: "Core Services"
     url: https://deep.simonschubert.com/
     type: http
-    interval: 120
+    interval: 600
     public: true
     conditions:
       - "[STATUS] == 200"
