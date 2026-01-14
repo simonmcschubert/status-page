@@ -1,9 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
 import { ConfigLoader } from './config/loader.js';
 import { MonitorRunner } from './monitors/runner.js';
 import { scheduleMonitors, reloadMonitors, shutdownQueue } from './queue/monitor-queue.js';
@@ -18,8 +18,6 @@ import { AuthService } from './services/auth-service.js';
 import { UserRepository } from './repositories/user-repository.js';
 import { requireAuth } from './middleware/auth.js';
 import { bootstrapAdmin } from './bootstrap.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
