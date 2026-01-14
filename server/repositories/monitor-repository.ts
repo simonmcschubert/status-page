@@ -2,6 +2,26 @@ import pool from '../db/index.js';
 import type { Monitor } from '../config/schemas/monitors.schema.js';
 import { MaintenanceRepository, type RecurringMaintenanceConfig } from './maintenance-repository.js';
 
+export interface CreateMonitorInput {
+  name: string;
+  type: string;
+  url: string;
+  group?: string;
+  public?: boolean;
+  config?: Record<string, unknown>;
+  conditions?: Record<string, unknown>;
+}
+
+export interface UpdateMonitorInput {
+  name?: string;
+  type?: string;
+  url?: string;
+  group?: string;
+  public?: boolean;
+  config?: Record<string, unknown>;
+  conditions?: Record<string, unknown>;
+}
+
 export class MonitorRepository {
   /**
    * Sync monitors from config to database
@@ -107,5 +127,97 @@ export class MonitorRepository {
       [id]
     );
     return result.rows[0] || null;
+  }
+
+  /**
+   * Create a new monitor
+   */
+  static async create(monitor: CreateMonitorInput): Promise<Monitor> {
+    const result = await pool.query(
+      `INSERT INTO monitors (name, type, url, "group", public, config, conditions)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, name, "group", type, url, public, config, conditions`,
+      [
+        monitor.name,
+        monitor.type,
+        monitor.url,
+        monitor.group || null,
+        monitor.public ?? true,
+        monitor.config ? JSON.stringify(monitor.config) : null,
+        monitor.conditions ? JSON.stringify(monitor.conditions) : null,
+      ]
+    );
+    return result.rows[0];
+  }
+
+  /**
+   * Update a monitor
+   */
+  static async update(id: number, updates: UpdateMonitorInput): Promise<Monitor | null> {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
+
+    if (updates.name !== undefined) {
+      fields.push(`name = $${paramIndex++}`);
+      values.push(updates.name);
+    }
+    if (updates.type !== undefined) {
+      fields.push(`type = $${paramIndex++}`);
+      values.push(updates.type);
+    }
+    if (updates.url !== undefined) {
+      fields.push(`url = $${paramIndex++}`);
+      values.push(updates.url);
+    }
+    if (updates.group !== undefined) {
+      fields.push(`"group" = $${paramIndex++}`);
+      values.push(updates.group || null);
+    }
+    if (updates.public !== undefined) {
+      fields.push(`public = $${paramIndex++}`);
+      values.push(updates.public);
+    }
+    if (updates.config !== undefined) {
+      fields.push(`config = $${paramIndex++}`);
+      values.push(JSON.stringify(updates.config));
+    }
+    if (updates.conditions !== undefined) {
+      fields.push(`conditions = $${paramIndex++}`);
+      values.push(JSON.stringify(updates.conditions));
+    }
+
+    if (fields.length === 0) {
+      return this.getMonitorById(id);
+    }
+
+    fields.push(`updated_at = NOW()`);
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE monitors SET ${fields.join(', ')} WHERE id = $${paramIndex} 
+       RETURNING id, name, "group", type, url, public, config, conditions`,
+      values
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Delete a monitor
+   */
+  static async delete(id: number): Promise<boolean> {
+    const result = await pool.query(
+      'DELETE FROM monitors WHERE id = $1',
+      [id]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * Count all monitors
+   */
+  static async count(): Promise<number> {
+    const result = await pool.query('SELECT COUNT(*) FROM monitors');
+    return parseInt(result.rows[0].count, 10);
   }
 }

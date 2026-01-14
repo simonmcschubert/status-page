@@ -2,6 +2,7 @@ import fs from 'fs';
 import yaml from 'js-yaml';
 import { AppConfigSchema, type AppConfig } from './schemas/app.schema.js';
 import { MonitorsConfigSchema, type MonitorsConfig } from './schemas/monitors.schema.js';
+import { SettingsRepository, type AppSettings } from '../repositories/settings-repository.js';
 
 export class ConfigLoader {
   private static appConfig: AppConfig | null = null;
@@ -22,6 +23,41 @@ export class ConfigLoader {
         console.error('❌ Failed to load app config:', error.message);
       }
       throw error;
+    }
+  }
+
+  /**
+   * Get app config merged with database settings
+   * Database settings take precedence over YAML
+   */
+  static async getMergedAppConfig(): Promise<AppConfig> {
+    const yamlConfig = this.getAppConfig();
+    
+    try {
+      const dbSettings = await SettingsRepository.get();
+      
+      // Merge database settings over YAML defaults
+      return {
+        ...yamlConfig,
+        app: {
+          ...yamlConfig.app,
+          title: dbSettings.app?.title || yamlConfig.app.title,
+          description: dbSettings.app?.description || yamlConfig.app.description,
+          logo_url: dbSettings.app?.logo_url || yamlConfig.app.logo_url,
+          timezone: dbSettings.app?.timezone || yamlConfig.app.timezone,
+          noindex: dbSettings.app?.noindex ?? yamlConfig.app.noindex,
+        },
+        notifications: {
+          ...yamlConfig.notifications,
+          webhook_url: dbSettings.notifications?.webhook_url || yamlConfig.notifications.webhook_url,
+          cooldown: dbSettings.notifications?.cooldown ?? yamlConfig.notifications.cooldown,
+          template: dbSettings.notifications?.template || yamlConfig.notifications.template,
+        },
+      };
+    } catch (error) {
+      // If database is not available, fall back to YAML only
+      console.warn('⚠️ Could not load database settings, using YAML config only');
+      return yamlConfig;
     }
   }
 

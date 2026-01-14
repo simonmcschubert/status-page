@@ -73,3 +73,43 @@ CREATE INDEX IF NOT EXISTS idx_incidents_monitor_id ON incidents(monitor_id);
 CREATE INDEX IF NOT EXISTS idx_incidents_started_at ON incidents(started_at);
 CREATE INDEX IF NOT EXISTS idx_status_history_monitor_date ON status_history(monitor_id, date);
 CREATE INDEX IF NOT EXISTS idx_maintenance_windows_times ON maintenance_windows(start_time, end_time);
+
+-- ============================================
+-- Admin UI Tables (added for open source release)
+-- ============================================
+
+-- Users table (single admin for now)
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Settings table (single row, org-specific data)
+CREATE TABLE IF NOT EXISTS settings (
+  id SERIAL PRIMARY KEY,
+  app JSONB DEFAULT '{}',           -- title, description, logo_url, timezone, noindex
+  notifications JSONB DEFAULT '{}', -- webhook_url, cooldown, template
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Refresh tokens for JWT auth
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token VARCHAR(255) UNIQUE NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for token lookup
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+
+-- Insert default settings row if not exists
+INSERT INTO settings (id, app, notifications)
+VALUES (1, '{}', '{}')
+ON CONFLICT (id) DO NOTHING;

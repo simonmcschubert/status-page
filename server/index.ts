@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -12,6 +13,11 @@ import { StatusHistoryRepository } from './repositories/status-history-repositor
 import { MonitorRepository } from './repositories/monitor-repository.js';
 import { MaintenanceRepository } from './repositories/maintenance-repository.js';
 import { scheduleDailyAggregation, scheduleHourlyAggregation, backfillHistoryOnStartup } from './jobs/daily-aggregation.js';
+import { SettingsRepository } from './repositories/settings-repository.js';
+import { AuthService } from './services/auth-service.js';
+import { UserRepository } from './repositories/user-repository.js';
+import { requireAuth } from './middleware/auth.js';
+import { bootstrapAdmin } from './bootstrap.js';
 
 dotenv.config();
 
@@ -19,7 +25,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
+app.use(cookieParser());
 app.use(express.json());
 
 // Serve static frontend files
@@ -46,15 +56,154 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes
-app.get('/api/config', (req, res) => {
-  if (!appConfig) {
-    return res.status(500).json({ error: 'Config not loaded' });
+// ============================================
+// Auth routes
+// ============================================
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const result = await AuthService.login(email, password);
+    
+    if (!result) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Set refresh token as httpOnly cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      user: result.user,
+      accessToken: result.accessToken,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Login failed';
+    res.status(500).json({ error: message });
   }
-  res.json({
-    app: appConfig.app,
-    ui: appConfig.ui,
-  });
+});
+
+// Logout
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    
+    if (refreshToken) {
+      await AuthService.logout(refreshToken);
+    }
+
+    res.clearCookie('refreshToken');
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+// Refresh access token
+app.post('/api/auth/refresh', async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'No refresh token' });
+    }
+
+    const result = await AuthService.refresh(refreshToken);
+    
+    if (!result) {
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
+
+    res.json({
+      user: result.user,
+      accessToken: result.accessToken,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Token refresh failed' });
+  }
+});
+
+// Get current user (protected)
+app.get('/api/auth/me', requireAuth, async (req, res) => {
+  try {
+    const user = await UserRepository.findById(req.user!.userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
+// Change password (protected)
+app.put('/api/auth/password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new passwords are required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+
+    const success = await AuthService.changePassword(
+      req.user!.userId,
+      currentPassword,
+      newPassword
+    );
+    
+    if (!success) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    res.clearCookie('refreshToken');
+    res.json({ message: 'Password changed successfully. Please log in again.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// Check if setup is needed
+app.get('/api/auth/setup-required', async (req, res) => {
+  try {
+    const userCount = await UserRepository.count();
+    res.json({ setupRequired: userCount === 0 });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to check setup status' });
+  }
+});
+
+// ============================================
+// API routes
+// ============================================
+app.get('/api/config', async (req, res) => {
+  try {
+    // Get merged config (DB settings override YAML defaults)
+    const mergedConfig = await ConfigLoader.getMergedAppConfig();
+    res.json({
+      app: mergedConfig.app,
+      ui: mergedConfig.ui,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to load config';
+    res.status(500).json({ error: message });
+  }
 });
 
 app.get('/api/monitors', async (req, res) => {
@@ -275,7 +424,7 @@ app.get('/api/monitors/:id/stats', async (req, res) => {
 });
 
 // Aggregate daily status (manual trigger - should normally run via cron)
-app.post('/api/admin/aggregate-status', async (req, res) => {
+app.post('/api/admin/aggregate-status', requireAuth, async (req, res) => {
   try {
     await StatusHistoryRepository.aggregateAllYesterday();
     res.json({ message: 'Status history aggregated successfully' });
@@ -286,7 +435,7 @@ app.post('/api/admin/aggregate-status', async (req, res) => {
 });
 
 // Reload monitors from config
-app.post('/api/admin/reload-monitors', async (req, res) => {
+app.post('/api/admin/reload-monitors', requireAuth, async (req, res) => {
   try {
     monitorsConfig = ConfigLoader.loadMonitorsConfig();
     await MonitorRepository.syncMonitors(monitorsConfig.monitors);
@@ -301,6 +450,181 @@ app.post('/api/admin/reload-monitors', async (req, res) => {
   }
 });
 
+// ============================================
+// Admin API routes (protected)
+// ============================================
+
+// Get all monitors (admin view - includes all monitors)
+app.get('/api/admin/monitors', requireAuth, async (req, res) => {
+  try {
+    const monitors = await MonitorRepository.getAllMonitors();
+    res.json({ monitors });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch monitors';
+    res.status(500).json({ error: message });
+  }
+});
+
+// Get a single monitor by ID
+app.get('/api/admin/monitors/:id', requireAuth, async (req, res) => {
+  try {
+    const monitorId = parseInt(req.params.id);
+    const monitor = await MonitorRepository.getMonitorById(monitorId);
+    
+    if (!monitor) {
+      return res.status(404).json({ error: 'Monitor not found' });
+    }
+    
+    res.json({ monitor });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch monitor';
+    res.status(500).json({ error: message });
+  }
+});
+
+// Create a new monitor
+app.post('/api/admin/monitors', requireAuth, async (req, res) => {
+  try {
+    const { name, type, url, group, public: isPublic, config, conditions } = req.body;
+    
+    if (!name || !type || !url) {
+      return res.status(400).json({ error: 'Name, type, and URL are required' });
+    }
+    
+    const monitor = await MonitorRepository.create({
+      name,
+      type,
+      url,
+      group,
+      public: isPublic,
+      config,
+      conditions,
+    });
+    
+    // Reload monitors to pick up the new one
+    monitorsConfig = ConfigLoader.loadMonitorsConfig();
+    await reloadMonitors();
+    
+    res.status(201).json({ monitor });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create monitor';
+    res.status(500).json({ error: message });
+  }
+});
+
+// Update a monitor
+app.put('/api/admin/monitors/:id', requireAuth, async (req, res) => {
+  try {
+    const monitorId = parseInt(req.params.id);
+    const { name, type, url, group, public: isPublic, config, conditions } = req.body;
+    
+    const monitor = await MonitorRepository.update(monitorId, {
+      name,
+      type,
+      url,
+      group,
+      public: isPublic,
+      config,
+      conditions,
+    });
+    
+    if (!monitor) {
+      return res.status(404).json({ error: 'Monitor not found' });
+    }
+    
+    // Reload monitors to pick up changes
+    monitorsConfig = ConfigLoader.loadMonitorsConfig();
+    await reloadMonitors();
+    
+    res.json({ monitor });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update monitor';
+    res.status(500).json({ error: message });
+  }
+});
+
+// Delete a monitor
+app.delete('/api/admin/monitors/:id', requireAuth, async (req, res) => {
+  try {
+    const monitorId = parseInt(req.params.id);
+    const deleted = await MonitorRepository.delete(monitorId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'Monitor not found' });
+    }
+    
+    // Reload monitors to remove from schedule
+    monitorsConfig = ConfigLoader.loadMonitorsConfig();
+    await reloadMonitors();
+    
+    res.json({ message: 'Monitor deleted successfully' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to delete monitor';
+    res.status(500).json({ error: message });
+  }
+});
+
+// Get settings
+app.get('/api/admin/settings', requireAuth, async (req, res) => {
+  try {
+    const settings = await SettingsRepository.get();
+    res.json({ settings });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch settings';
+    res.status(500).json({ error: message });
+  }
+});
+
+// Update settings
+app.put('/api/admin/settings', requireAuth, async (req, res) => {
+  try {
+    const { app: appSettings, notifications } = req.body;
+    
+    const settings = await SettingsRepository.updateAll(
+      appSettings || {},
+      notifications || {}
+    );
+    
+    res.json({ settings });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update settings';
+    res.status(500).json({ error: message });
+  }
+});
+
+// Test a monitor URL without saving
+app.post('/api/admin/test-monitor', requireAuth, async (req, res) => {
+  try {
+    const { type, url, config } = req.body;
+    
+    if (!type || !url) {
+      return res.status(400).json({ error: 'Type and URL are required' });
+    }
+    
+    // Create a temporary monitor config
+    const testMonitor = {
+      id: 0,
+      name: 'Test Monitor',
+      type,
+      url,
+      public: false,
+      ...config,
+    };
+    
+    const results = await MonitorRunner.runChecks([testMonitor]);
+    const result = results[0];
+    
+    res.json({
+      success: result?.success ?? false,
+      responseTime: result?.responseTime ?? null,
+      error: result?.error ?? null,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to test monitor';
+    res.status(500).json({ error: message });
+  }
+});
+
 // Catch-all route for SPA - must be after API routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
@@ -311,6 +635,13 @@ app.listen(PORT, async () => {
   console.log(`🚀 Status Page server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🧪 Test checks: POST http://localhost:${PORT}/api/test-check`);
+  
+  // Bootstrap admin user from environment variables
+  try {
+    await bootstrapAdmin();
+  } catch (error) {
+    console.error('❌ Failed to bootstrap admin:', error);
+  }
   
   // Sync monitors from config to database, then schedule checks
   if (monitorsConfig) {

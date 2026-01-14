@@ -26,8 +26,9 @@ A lightweight, self-hosted status page for monitoring services — built from sc
 - **90-day uptime history** - Visual uptime bars with daily aggregation
 - **Response time charts** - Real historical response time data
 - **Incident tracking** - Automatic incident creation/resolution with history
+- **Admin UI** - Web-based admin panel for managing monitors and settings
 - **Badges API** - SVG badges for embedding in READMEs
-- **Auto-sync monitors** - Monitors defined in YAML, auto-synced to database
+- **Auto-sync monitors** - Monitors defined in YAML or via Admin UI
 
 ## Tech Stack
 
@@ -134,6 +135,8 @@ monitors:
 
 ## API Endpoints
 
+### Public Endpoints
+
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
@@ -144,6 +147,32 @@ monitors:
 | `/api/incidents` | GET | Incident history |
 | `/api/test-check` | POST | Manual check trigger |
 | `/api/reload-monitors` | POST | Reload configuration |
+
+### Admin Endpoints (Protected)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/login` | POST | Login with email/password |
+| `/api/auth/logout` | POST | Logout and clear session |
+| `/api/auth/refresh` | POST | Refresh access token |
+| `/api/auth/me` | GET | Get current user |
+| `/api/auth/password` | PUT | Change password |
+| `/api/admin/monitors` | GET/POST | List/create monitors |
+| `/api/admin/monitors/:id` | GET/PUT/DELETE | Get/update/delete monitor |
+| `/api/admin/settings` | GET/PUT | Get/update settings |
+| `/api/admin/test-monitor` | POST | Test monitor URL |
+
+### Admin UI
+
+Access the admin UI at `/admin`. On first run, set these environment variables:
+
+```bash
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your_secure_password
+JWT_SECRET=your_jwt_secret_key
+```
+
+The admin user will be automatically created when the server starts.
 
 ## Project Structure
 
@@ -201,6 +230,9 @@ This runs Ansible playbooks that:
 - ✅ Monitor detail pages
 - ✅ Ansible deployment
 - ✅ Scheduled maintenance windows
+- ✅ Admin UI with JWT authentication
+- ✅ Monitor CRUD via web interface
+- ✅ Settings management via web interface
 
 ### Planned
 - 🟡 Email/webhook notifications
