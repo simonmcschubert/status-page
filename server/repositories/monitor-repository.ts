@@ -41,7 +41,7 @@ export class MonitorRepository {
       const configIds = new Set<number>(monitors.map(m => m.id));
       
       // Upsert all monitors from config
-      // Note: We don't overwrite 'public' on conflict - database is the source of truth for visibility
+      // YAML is the source of truth - all fields including 'public' are synced from config
       for (const monitor of monitors) {
         await client.query(`
           INSERT INTO monitors (id, name, "group", type, url, public)
@@ -51,6 +51,7 @@ export class MonitorRepository {
             "group" = EXCLUDED."group",
             type = EXCLUDED.type,
             url = EXCLUDED.url,
+            public = EXCLUDED.public,
             updated_at = NOW()
         `, [
           monitor.id,
