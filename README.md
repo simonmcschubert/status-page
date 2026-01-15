@@ -1,123 +1,127 @@
 ---
 name: status-page
-description: 
+description: A lightweight, self-hosted status page for monitoring services
 github_repo: https://github.com/simonmcschubert/status-page
-
-status: active
-
-app_id: status-page
-server: personal01
-server_path: /var/www/status-page
-license: none
-domain: status.simonschubert.com
+license: MIT
 ---
 
-# Status Page
+<div align="center">
 
-A lightweight, self-hosted status page for monitoring services — built from scratch as a learning & portfolio project.
+# 📊 Status Page
 
-**Live Demo**: [status.simonschubert.com](https://status.simonschubert.com)
+A lightweight, self-hosted status page for monitoring your services.
 
-## Features
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-- **Multi-protocol monitoring** - HTTP/HTTPS, TCP, WebSocket, DNS, ICMP (ping)
-- **Flexible condition system** - DSL for health checks with JSONPath support
-- **Beautiful UI** - Dark mode, Tailwind CSS, shadcn/ui components
-- **90-day uptime history** - Visual uptime bars with daily aggregation
-- **Response time charts** - Real historical response time data
-- **Incident tracking** - Automatic incident creation/resolution with history
-- **Admin UI** - Web-based admin panel for managing monitors and settings
-- **Badges API** - SVG badges for embedding in READMEs
-- **Auto-sync monitors** - Monitors defined in YAML or via Admin UI
+[Live Demo](https://status.simonschubert.com) · [Documentation](#configuration) · [Report Bug](https://github.com/simonmcschubert/status-page/issues)
 
-## Tech Stack
+</div>
 
-### Backend
-- **Runtime**: Node.js 20+ with TypeScript
-- **Framework**: Express
-- **Job Queue**: BullMQ (Redis-backed)
-- **Database**: PostgreSQL 16
-- **Cache**: Redis 7
-- **Config**: YAML with Zod validation
-- **Condition Engine**: JSONPath Plus + custom DSL parser
+---
 
-### Frontend
-- **Framework**: React 19 with TypeScript
-- **Build Tool**: Vite 7
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **Routing**: React Router
-- **Icons**: Lucide React
+## ✨ Features
 
-### Infrastructure
-- **Deployment**: Ansible playbooks
-- **Web Server**: Nginx with SSL (Let's Encrypt)
-- **Process Manager**: systemd
+- 🔍 **Multi-protocol monitoring** — HTTP/HTTPS, TCP, WebSocket, DNS, ICMP (ping)
+- 📝 **Flexible conditions** — DSL for health checks with JSONPath support
+- 🎨 **Beautiful UI** — Dark mode, responsive design with Tailwind CSS
+- 📈 **90-day uptime history** — Visual uptime bars with daily aggregation
+- ⏱️ **Response time charts** — Historical performance data
+- 🚨 **Incident tracking** — Automatic incident creation and resolution
+- 🔒 **Private monitors** — Keep internal services hidden from public view
+- 🛠️ **YAML configuration** — Define monitors as code, version control friendly
+- 🐳 **Docker support** — Easy deployment with Docker Compose
 
-## Getting Started
+## 🖼️ Screenshots
 
-### Prerequisites
+<details>
+<summary>View screenshots</summary>
+
+| Public Status Page | Admin Dashboard |
+|:------------------:|:---------------:|
+| ![Public Page](docs/screenshots/public.png) | ![Admin](docs/screenshots/admin.png) |
+
+</details>
+
+## 🚀 Quick Start
+
+### Using Docker (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/simonmcschubert/status-page.git
+cd status-page
+
+# Copy example configuration
+cp .env.example .env
+cp config/config.example.yml config/config.yml
+cp config/monitors.example.yml config/monitors.yml
+
+# Start with Docker Compose
+docker-compose up -d
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view your status page.
+
+### Manual Installation
+
+<details>
+<summary>Click to expand</summary>
+
+#### Prerequisites
 
 - Node.js >= 20.4
 - PostgreSQL 16
 - Redis 7
 
-### Installation
+#### Steps
 
-1. Clone the repository:
 ```bash
+# Clone and install
 git clone https://github.com/simonmcschubert/status-page.git
 cd status-page
-```
-
-2. Install dependencies:
-```bash
 npm install
-cd client && npm install
-```
+cd client && npm install && cd ..
 
-3. Set up environment variables:
-```bash
+# Configure
 cp .env.example .env
-# Edit .env with your database credentials
-```
-
-4. Set up configuration files:
-```bash
 cp config/config.example.yml config/config.yml
 cp config/monitors.example.yml config/monitors.yml
+
+# Edit .env with your database credentials
 # Edit config files as needed
+
+# Start development servers
+npm run dev          # Backend on :3000
+cd client && npm run dev  # Frontend on :5173
 ```
 
-5. Run database migrations:
-```bash
-npm run db:migrate
-```
+</details>
 
-6. Start development servers:
-```bash
-# Terminal 1: Backend
-npm run dev
+## ⚙️ Configuration
 
-# Terminal 2: Frontend
-cd client && npm run dev
-```
-
-- Backend: `http://localhost:3000`
-- Frontend: `http://localhost:5173`
-
-### Using Docker
+### Environment Variables (`.env`)
 
 ```bash
-docker-compose up -d
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/statuspage
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Server
+PORT=3000
+NODE_ENV=production
+
+# Admin credentials (auto-creates admin user on first run)
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=secure_password
+JWT_SECRET=your-secret-key  # Generate with: openssl rand -base64 32
 ```
 
-## Configuration
-
-### `config/config.yml` - Application Settings
-
-Configure branding, notifications, and UI preferences.
-
-### `config/monitors.yml` - Service Definitions
+### Monitor Configuration (`config/monitors.yml`)
 
 ```yaml
 monitors:
@@ -126,118 +130,163 @@ monitors:
     group: "Core Services"
     url: https://example.com/
     type: http
-    interval: 60
-    public: true
+    interval: 60          # Check every 60 seconds
+    public: true          # Show on public status page
     conditions:
       - "[STATUS] == 200"
       - "[RESPONSE_TIME] < 500"
+      - "[CERTIFICATE_EXPIRATION] > 7d"
+
+  - id: 2
+    name: Internal API
+    url: http://internal-api:8080/health
+    type: http
+    interval: 30
+    public: false         # Hidden from public, visible in admin
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].status == 'ok'"
 ```
 
-## API Endpoints
+### Supported Monitor Types
+
+| Type | Description | Example URL |
+|------|-------------|-------------|
+| `http` | HTTP/HTTPS endpoints | `https://api.example.com/health` |
+| `tcp` | TCP port checks | `tcp://db.example.com:5432` |
+| `websocket` | WebSocket connections | `wss://ws.example.com` |
+| `dns` | DNS resolution | `dns://example.com` |
+| `ping` | ICMP ping | `ping://server.example.com` |
+
+### Condition DSL
+
+```yaml
+conditions:
+  # Status codes
+  - "[STATUS] == 200"
+  - "[STATUS] >= 200 && [STATUS] < 300"
+  
+  # Response time (ms)
+  - "[RESPONSE_TIME] < 500"
+  
+  # SSL certificate expiration
+  - "[CERTIFICATE_EXPIRATION] > 30d"
+  
+  # JSON body (with JSONPath)
+  - "[BODY].status == 'healthy'"
+  - "[BODY].services[0].name == 'api'"
+```
+
+## 🔌 API
 
 ### Public Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/api/config` | GET | App configuration |
-| `/api/monitors` | GET | All public monitors with stats |
-| `/api/monitors/:id` | GET | Single monitor with response time history |
-| `/api/status` | GET | Current status (runs all checks) |
-| `/api/incidents` | GET | Incident history |
-| `/api/test-check` | POST | Manual check trigger |
-| `/api/reload-monitors` | POST | Reload configuration |
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/monitors` | All public monitors with uptime stats |
+| `GET /api/monitors/:id` | Single monitor with response time history |
+| `GET /api/status` | Current status of all public monitors |
+| `GET /api/incidents` | Incident history |
+| `GET /api/config` | App configuration (branding, etc.) |
 
-### Admin Endpoints (Protected)
+### Admin Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/login` | POST | Login with email/password |
-| `/api/auth/logout` | POST | Logout and clear session |
-| `/api/auth/refresh` | POST | Refresh access token |
-| `/api/auth/me` | GET | Get current user |
-| `/api/auth/password` | PUT | Change password |
-| `/api/admin/monitors` | GET/POST | List/create monitors |
-| `/api/admin/monitors/:id` | GET/PUT/DELETE | Get/update/delete monitor |
-| `/api/admin/settings` | GET/PUT | Get/update settings |
-| `/api/admin/test-monitor` | POST | Test monitor URL |
+All admin endpoints require JWT authentication.
 
-### Admin UI
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/auth/login` | Authenticate and get tokens |
+| `GET /api/admin/status` | All monitors including private ones |
+| `GET /api/admin/monitors/:id/details` | Detailed monitor stats |
+| `POST /api/reload-monitors` | Reload configuration from YAML |
 
-Access the admin UI at `/admin`. On first run, set these environment variables:
+## 🏗️ Tech Stack
 
-```bash
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=your_secure_password
-JWT_SECRET=your_jwt_secret_key
-```
+<table>
+<tr>
+<td valign="top">
 
-The admin user will be automatically created when the server starts.
+### Backend
+- **Node.js** + **TypeScript**
+- **Express** — HTTP server
+- **BullMQ** — Job queue (Redis)
+- **PostgreSQL** — Data persistence
+- **Zod** — Schema validation
 
-## Project Structure
+</td>
+<td valign="top">
+
+### Frontend
+- **React 19** + **TypeScript**
+- **Vite 7** — Build tool
+- **Tailwind CSS** — Styling
+- **shadcn/ui** — Components
+- **Recharts** — Charts
+
+</td>
+</tr>
+</table>
+
+## 📁 Project Structure
 
 ```
 status-page/
-├── server/               # Backend application
-│   ├── config/          # Configuration loaders and Zod schemas
-│   ├── db/              # Database connection and migrations
-│   ├── jobs/            # Scheduled jobs (daily aggregation)
-│   ├── monitors/        # Monitor checkers and condition evaluator
-│   │   └── checkers/   # Protocol-specific checkers
-│   ├── queue/          # BullMQ job queue setup
-│   ├── repositories/   # Data access layer
-│   └── index.ts        # Express server
-├── client/              # Frontend React application
+├── server/                 # Backend
+│   ├── config/            # Config loaders & schemas
+│   ├── db/                # Database & migrations
+│   ├── monitors/          # Protocol checkers
+│   ├── queue/             # BullMQ job processing
+│   └── repositories/      # Data access layer
+├── client/                 # Frontend
 │   └── src/
-│       ├── components/ # UI components
-│       │   └── ui/    # shadcn/ui components
-│       ├── pages/      # StatusPage, MonitorDetailPage
-│       ├── services/   # API client
-│       └── lib/        # Utilities
-├── config/              # Configuration files
-├── scripts/             # Deployment scripts
-└── ansible/             # Ansible playbooks
+│       ├── components/    # React components
+│       ├── pages/         # Route pages
+│       └── services/      # API client
+├── config/                 # YAML configuration
+│   ├── config.yml         # App settings
+│   └── monitors.yml       # Monitor definitions
+└── scripts/               # Deployment scripts
 ```
 
-## Deployment
+## 🚢 Deployment
 
-Deploy to production using the included script:
+### Simple Deploy Script
 
 ```bash
-./scripts/deploy.sh
+./scripts/deploy.sh user@your-server.com
 ```
 
-This runs Ansible playbooks that:
-- Clone/update the repository
-- Install dependencies
-- Build frontend and backend
-- Run database migrations
-- Configure Nginx with SSL
-- Restart the systemd service
+The script will:
+1. Run local checks (TypeScript, frontend build)
+2. SSH to your server
+3. Pull latest code
+4. Install dependencies & build
+5. Restart the service
 
-## Development Status
+### Production Requirements
 
-✅ **Production Ready** - Actively monitoring services
+- **Nginx** — Reverse proxy with SSL
+- **systemd** — Process management
+- **Let's Encrypt** — SSL certificates
 
-### Completed
-- ✅ All protocol checkers (HTTP, TCP, WebSocket, DNS, Ping)
-- ✅ BullMQ job queue with automated scheduling
-- ✅ Database persistence and incident detection
-- ✅ React frontend with Tailwind CSS + shadcn/ui
-- ✅ 90-day uptime visualization
-- ✅ Response time charts with real data
-- ✅ Daily historical data aggregation
-- ✅ Monitor detail pages
-- ✅ Ansible deployment
-- ✅ Scheduled maintenance windows
-- ✅ Admin UI with JWT authentication
-- ✅ Monitor CRUD via web interface
-- ✅ Settings management via web interface
+See [deployment documentation](docs/deployment.md) for detailed setup instructions.
 
-### Planned
-- 🟡 Email/webhook notifications
-- 🟡 Public badges API
+## 🤝 Contributing
 
-## License
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Private project - not licensed for redistribution.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful components
+- [Tailwind CSS](https://tailwindcss.com/) for the styling system
+- [BullMQ](https://docs.bullmq.io/) for reliable job processing
