@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, XCircle, AlertTriangle, Activity, Server, Lock, Pencil, Plus } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Activity, Server, Lock } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
 import { UptimeBar } from '../../components/UptimeBar';
@@ -99,19 +99,10 @@ export function AdminStatusPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header with Add button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Status Overview</h1>
-          <p className="text-gray-400 mt-1">All services including private monitors</p>
-        </div>
-        <Link
-          to="/admin/monitors/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Add Monitor
-        </Link>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-white">Status Overview</h1>
+        <p className="text-gray-400 mt-1">All services including private monitors</p>
       </div>
 
       {/* Status Banner */}
@@ -207,10 +198,11 @@ export function AdminStatusPage() {
           ))}
           {monitors.length === 0 && (
             <div className="text-center py-12 text-gray-400">
-              No monitors configured yet.{' '}
-              <Link to="/admin/monitors/new" className="text-blue-400 hover:underline">
-                Add your first monitor
+              No monitors configured yet. Go to{' '}
+              <Link to="/admin/monitors" className="text-blue-400 hover:underline">
+                Monitors
               </Link>
+              {' '}to add your first monitor.
             </div>
           )}
         </div>
@@ -219,7 +211,7 @@ export function AdminStatusPage() {
   );
 }
 
-// Admin-enhanced monitor row with edit button and visibility indicator
+// Monitor row - clickable to view details
 function AdminMonitorRow({ monitor }: { monitor: Monitor }) {
   const uptimePercent = monitor.uptime ?? 100;
   
@@ -260,7 +252,10 @@ function AdminMonitorRow({ monitor }: { monitor: Monitor }) {
   const StatusIcon = status.icon;
 
   return (
-    <div className="group rounded-lg border border-gray-700 bg-gray-800 p-4 transition-all hover:border-gray-600">
+    <Link 
+      to={`/admin/status/${monitor.id}`}
+      className="group block rounded-lg border border-gray-700 bg-gray-800 p-4 transition-all hover:border-gray-600 hover:bg-gray-750"
+    >
       <div className="flex items-center justify-between gap-4">
         {/* Left: Name and Status Icon */}
         <div className="flex items-center gap-3 min-w-0">
@@ -288,7 +283,7 @@ function AdminMonitorRow({ monitor }: { monitor: Monitor }) {
           <UptimeBar uptimeHistory={monitor.uptimeHistory} days={90} />
         </div>
 
-        {/* Right: Uptime %, Status Badge, and Edit button */}
+        {/* Right: Uptime % and Status Badge */}
         <div className="flex items-center gap-4 shrink-0">
           <div className="text-right hidden sm:block">
             <div className={cn(
@@ -305,14 +300,6 @@ function AdminMonitorRow({ monitor }: { monitor: Monitor }) {
           <Badge className={cn("hidden xs:flex", status.badgeClass)}>
             {status.label}
           </Badge>
-          
-          <Link
-            to={`/admin/monitors/${monitor.id}`}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-            title="Edit monitor"
-          >
-            <Pencil className="h-4 w-4" />
-          </Link>
         </div>
       </div>
 
@@ -320,6 +307,6 @@ function AdminMonitorRow({ monitor }: { monitor: Monitor }) {
       <div className="md:hidden mt-3 pt-3 border-t border-gray-700">
         <UptimeBar uptimeHistory={monitor.uptimeHistory} days={90} />
       </div>
-    </div>
+    </Link>
   );
 }

@@ -1,0 +1,376 @@
+import { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, Activity, CheckCircle, XCircle, AlertTriangle, Bell, AlertCircle, Wrench, Lock, ExternalLink, Pencil } from 'lucide-react';
+import type { Monitor } from '../../types';
+import { UptimeBar } from '../../components/UptimeBar';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Skeleton } from '../../components/ui/skeleton';
+import { useSmartPolling } from '../../hooks/useSmartPolling';
+import { useAuth } from '../../contexts/AuthContext';
+import { cn } from '../../lib/utils';
+
+export function AdminMonitorDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { accessToken } = useAuth();
+  const [monitor, setMonitor] = useState<Monitor | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function fetchMonitor() {
+    if (!accessToken) return;
+    
+    try {
+      // Use admin endpoint to get all monitors including private ones
+      const response = await fetch('/api/admin/status', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch monitors');
+      }
+      
+      const data = await response.json();
+      const found = data.monitors?.find((m: Monitor) => m.id === parseInt(id || '0'));
+      
+      if (!found) {
+        throw new Error('Monitor not found');
+      }
+      
+      setMonitor(found);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load monitor');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Smart polling: 10s when active, 60s when tab hidden
+  useSmartPolling({
+    onPoll: fetchMonitor,
+    activeInterval: 10000,
+    inactiveInterval: 60000,
+  });
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-32 bg-gray-700" />
+        <Skeleton className="h-24 w-full bg-gray-700" />
+        <Skeleton className="h-48 w-full bg-gray-700" />
+        <Skeleton className="h-48 w-full bg-gray-700" />
+      </div>
+    );
+  }
+
+  if (error || !monitor) {
+    return (
+      <div className="space-y-6">
+        <Link 
+          to="/admin" 
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Status
+        </Link>
+        <Card className="border-red-500 bg-red-500/10">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-red-400">
+              <XCircle className="h-5 w-5" />
+              <span>{error || 'Monitor not found'}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const getStatusVariant = (): 'success' | 'destructive' | 'warning' | 'secondary' => {
+    if (monitor.currentStatus === 'maintenance') return 'secondary';
+    if (monitor.currentStatus === 'down') return 'destructive';
+    if (monitor.currentStatus === 'degraded') return 'warning';
+    return 'success';
+  };
+
+  const getStatusIcon = () => {
+    if (monitor.currentStatus === 'maintenance') return <Wrench className="h-5 w-5" />;
+    if (monitor.currentStatus === 'down') return <XCircle className="h-5 w-5" />;
+    if (monitor.currentStatus === 'degraded') return <AlertTriangle className="h-5 w-5" />;
+    return <CheckCircle className="h-5 w-5" />;
+  };
+
+  const getStatusText = () => {
+    if (monitor.currentStatus === 'maintenance') return 'Maintenance';
+    if (monitor.currentStatus === 'down') return 'Down';
+    if (monitor.currentStatus === 'degraded') return 'Degraded';
+    return 'Operational';
+  };
+
+  const uptimePercent = monitor.uptime ?? 100;
+  const avgResponseTime = typeof monitor.avgResponseTime === 'string' 
+    ? parseFloat(monitor.avgResponseTime) 
+    : (monitor.avgResponseTime ?? 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Back Link */}
+      <Link 
+        to="/admin" 
+        className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Status
+      </Link>
+
+      {/* Maintenance Banner */}
+      {monitor.maintenance?.active && (
+        <Card className="border-blue-500/30 bg-blue-500/10">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Wrench className="h-5 w-5 text-blue-400" />
+              <div>
+                <p className="font-medium text-white">Scheduled Maintenance in Progress</p>
+                {monitor.maintenance.description && (
+                  <p className="text-sm text-gray-400 mt-1">{monitor.maintenance.description}</p>
+                )}
+                {monitor.maintenance.endsAt && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Expected to end: {new Date(monitor.maintenance.endsAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Header Card */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "p-2 rounded-full",
+                  monitor.currentStatus === 'up' && "bg-green-500/20 text-green-400",
+                  monitor.currentStatus === 'degraded' && "bg-yellow-500/20 text-yellow-400",
+                  monitor.currentStatus === 'down' && "bg-red-500/20 text-red-400",
+                  monitor.currentStatus === 'maintenance' && "bg-blue-500/20 text-blue-400"
+                )}>
+                  {getStatusIcon()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold text-white">
+                      {monitor.name}
+                    </h1>
+                    {!monitor.public && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-700 text-gray-400 rounded text-xs">
+                        <Lock className="h-3 w-3" />
+                        Private
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm text-gray-400">{monitor.url}</p>
+                    <a 
+                      href={monitor.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-gray-500 hover:text-gray-300"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge 
+                variant={getStatusVariant()} 
+                className={cn(
+                  "text-sm px-3 py-1",
+                  monitor.currentStatus === 'up' && "bg-green-500/20 text-green-400",
+                  monitor.currentStatus === 'down' && "bg-red-500/20 text-red-400",
+                  monitor.currentStatus === 'degraded' && "bg-yellow-500/20 text-yellow-400",
+                  monitor.currentStatus === 'maintenance' && "bg-blue-500/20 text-blue-400"
+                )}
+              >
+                {getStatusText()}
+              </Badge>
+              <Link
+                to={`/admin/monitors/${monitor.id}`}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg text-sm transition-colors"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Uptime Section */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2 text-white">
+            <Activity className="h-5 w-5 text-gray-400" />
+            Overall Uptime
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-400">Last 90 days</span>
+            <span className={cn(
+              "text-2xl font-bold",
+              uptimePercent >= 99.9 ? "text-green-400" :
+              uptimePercent >= 99 ? "text-yellow-400" : "text-red-400"
+            )}>
+              {uptimePercent.toFixed(2)}%
+            </span>
+          </div>
+          <UptimeBar uptimeHistory={monitor.uptimeHistory} days={90} />
+        </CardContent>
+      </Card>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="pt-6 text-center">
+            <div className={cn(
+              "text-2xl font-bold",
+              uptimePercent >= 99.9 ? "text-green-400" :
+              uptimePercent >= 99 ? "text-yellow-400" : "text-red-400"
+            )}>
+              {uptimePercent.toFixed(2)}%
+            </div>
+            <div className="text-sm text-gray-400 mt-1">Overall Uptime</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="pt-6 text-center">
+            <div className="text-2xl font-bold text-white">
+              {avgResponseTime.toFixed(0)}ms
+            </div>
+            <div className="text-sm text-gray-400 mt-1">Avg Response</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="pt-6 text-center">
+            <div className="text-2xl font-bold text-white">
+              {monitor.interval || 60}s
+            </div>
+            <div className="text-sm text-gray-400 mt-1">Check Interval</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="pt-6 text-center">
+            <div className="text-2xl font-bold text-white uppercase">
+              {monitor.type}
+            </div>
+            <div className="text-sm text-gray-400 mt-1">Monitor Type</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Incidents / Status Updates */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2 text-white">
+            <Bell className="h-5 w-5 text-gray-400" />
+            Status Updates
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {monitor.incidents && monitor.incidents.length > 0 ? (
+            <div className="space-y-4">
+              {monitor.incidents.map((incident) => {
+                const startDate = new Date(incident.startedAt);
+                const resolvedDate = incident.resolvedAt ? new Date(incident.resolvedAt) : null;
+                const isResolved = incident.status === 'resolved';
+                
+                const formatDuration = () => {
+                  const end = resolvedDate || new Date();
+                  const durationMs = end.getTime() - startDate.getTime();
+                  const minutes = Math.floor(durationMs / 60000);
+                  const hours = Math.floor(minutes / 60);
+                  const days = Math.floor(hours / 24);
+                  
+                  if (days > 0) return `${days}d ${hours % 24}h`;
+                  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+                  return `${minutes}m`;
+                };
+
+                const getStatusIcon = () => {
+                  if (isResolved) return <CheckCircle className="h-4 w-4 text-green-400" />;
+                  if (incident.severity === 'critical') return <XCircle className="h-4 w-4 text-red-400" />;
+                  return <AlertCircle className="h-4 w-4 text-yellow-400" />;
+                };
+
+                return (
+                  <div 
+                    key={incident.id}
+                    className={cn(
+                      "p-4 rounded-lg border",
+                      isResolved 
+                        ? "border-gray-700 bg-gray-700/50" 
+                        : "border-red-500/30 bg-red-500/10"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          {getStatusIcon()}
+                        </div>
+                        <div className="space-y-1">
+                          <div className="font-medium text-white">
+                            {incident.title}
+                          </div>
+                          {incident.description && (
+                            <p className="text-sm text-gray-400">
+                              {incident.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <span>
+                              {startDate.toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                year: startDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                            <span>•</span>
+                            <span>Duration: {formatDuration()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <Badge 
+                        className={cn(
+                          "text-xs shrink-0",
+                          isResolved ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                        )}
+                      >
+                        {isResolved ? 'Resolved' : incident.status}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+              <CheckCircle className="h-10 w-10 mb-3 text-green-500/50" />
+              <p className="text-sm">No incidents recorded</p>
+              <p className="text-xs mt-1 text-gray-500">This monitor has been running smoothly</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
