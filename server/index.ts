@@ -542,6 +542,75 @@ app.get('/api/admin/monitors/:id', requireAuth, async (req, res) => {
   }
 });
 
+// Get detailed monitor stats (for admin detail page)
+app.get('/api/admin/monitors/:id/details', requireAuth, async (req, res) => {
+  if (!monitorsConfig) {
+    return res.status(500).json({ error: 'Monitors config not loaded' });
+  }
+  
+  const monitorId = parseInt(req.params.id);
+  // For admin, find monitor regardless of public status
+  const monitor = monitorsConfig.monitors.find(m => m.id === monitorId);
+  
+  if (!monitor) {
+    return res.status(404).json({ error: 'Monitor not found' });
+  }
+  
+  try {
+    // Get additional stats (same as public detail endpoint)
+    const history = await StatusHistoryRepository.getHistory(monitorId, 90);
+    const uptime = history.length > 0 
+      ? await StatusHistoryRepository.calculateAverageUptime(monitorId, 90)
+      : await CheckRepository.calculateUptime(monitorId, 90);
+    const avgResponseTime = await CheckRepository.getAverageResponseTime(monitorId, 30);
+    const latestCheck = await CheckRepository.getLatestCheck(monitorId);
+    const responseTimeHistory = await CheckRepository.getResponseTimeHistory(monitorId, 30, 'day');
+    const recentChecks = await CheckRepository.getRecentResponseTimes(monitorId, 100);
+    const incidents = await IncidentRepository.getIncidentsForMonitor(monitorId, 20);
+    const maintenanceStatus = await MaintenanceRepository.isInMaintenance(monitorId);
+    
+    // Determine current status - maintenance takes precedence
+    let currentStatus: string = 'unknown';
+    if (maintenanceStatus.inMaintenance) {
+      currentStatus = 'maintenance';
+    } else if (latestCheck?.success) {
+      currentStatus = 'up';
+    } else if (latestCheck) {
+      currentStatus = 'down';
+    }
+    
+    res.json({
+      ...monitor,
+      uptime,
+      avgResponseTime,
+      currentStatus,
+      uptimeHistory: history.map(h => ({
+        date: h.date,
+        uptime: h.uptimePercentage,
+      })),
+      responseTimeHistory,
+      recentChecks,
+      incidents: incidents.map(i => ({
+        id: i.id,
+        status: i.status,
+        severity: i.severity,
+        title: i.title,
+        description: i.description,
+        startedAt: i.startedAt,
+        resolvedAt: i.resolvedAt,
+      })),
+      maintenance: maintenanceStatus.inMaintenance ? {
+        active: true,
+        description: maintenanceStatus.description || maintenanceStatus.window?.description,
+        endsAt: maintenanceStatus.endsAt || maintenanceStatus.window?.endTime,
+      } : undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch monitor details';
+    res.status(500).json({ error: message });
+  }
+});
+
 // Create a new monitor
 app.post('/api/admin/monitors', requireAuth, async (req, res) => {
   try {

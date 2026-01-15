@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Activity, CheckCircle, XCircle, AlertTriangle, Bell, AlertCircle, Wrench, Lock, ExternalLink, Pencil } from 'lucide-react';
+import { ArrowLeft, Activity, CheckCircle, XCircle, AlertTriangle, Bell, AlertCircle, Wrench, Lock, ExternalLink, Pencil, Clock } from 'lucide-react';
 import type { Monitor } from '../../types';
 import { UptimeBar } from '../../components/UptimeBar';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -21,25 +21,22 @@ export function AdminMonitorDetailPage() {
     if (!accessToken) return;
     
     try {
-      // Use admin endpoint to get all monitors including private ones
-      const response = await fetch('/api/admin/status', {
+      // Use dedicated admin detail endpoint for full stats
+      const response = await fetch(`/api/admin/monitors/${id}/details`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch monitors');
+        if (response.status === 404) {
+          throw new Error('Monitor not found');
+        }
+        throw new Error('Failed to fetch monitor');
       }
       
       const data = await response.json();
-      const found = data.monitors?.find((m: Monitor) => m.id === parseInt(id || '0'));
-      
-      if (!found) {
-        throw new Error('Monitor not found');
-      }
-      
-      setMonitor(found);
+      setMonitor(data);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load monitor');
@@ -113,6 +110,32 @@ export function AdminMonitorDetailPage() {
   const avgResponseTime = typeof monitor.avgResponseTime === 'string' 
     ? parseFloat(monitor.avgResponseTime) 
     : (monitor.avgResponseTime ?? 0);
+
+  // Use 90-day aggregated history for the chart (prefer daily data over individual checks)
+  const responseTimeData = monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
+    ? monitor.responseTimeHistory.map(h => ({
+        value: h.avgResponseTime,
+        timestamp: h.timestamp,
+        success: true,
+        minValue: h.minResponseTime,
+        maxValue: h.maxResponseTime,
+      }))
+    : monitor.recentChecks && monitor.recentChecks.length > 0
+    ? monitor.recentChecks
+        .filter(check => check.success)
+        .slice(-90)
+        .map(check => ({
+          value: check.responseTime,
+          timestamp: check.timestamp,
+          success: check.success,
+          minValue: check.responseTime,
+          maxValue: check.responseTime,
+        }))
+    : [];
+
+  const maxResponseTime = responseTimeData.length > 0 
+    ? Math.max(...responseTimeData.map(d => d.value), 1)
+    : 100;
 
   return (
     <div className="space-y-6">
@@ -233,6 +256,60 @@ export function AdminMonitorDetailPage() {
             </span>
           </div>
           <UptimeBar uptimeHistory={monitor.uptimeHistory} days={90} />
+        </CardContent>
+      </Card>
+
+      {/* Response Time Chart */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2 text-white">
+            <Clock className="h-5 w-5 text-gray-400" />
+            Response Time
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {responseTimeData.length > 0 ? (
+            <>
+              <div className="flex items-end gap-[2px] h-24 mb-4">
+                {responseTimeData.map((data, index) => {
+                  const date = new Date(data.timestamp);
+                  const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  const tooltipText = data.minValue !== data.maxValue
+                    ? `${dateStr}: Avg ${data.value.toFixed(0)}ms (${data.minValue}-${data.maxValue}ms)`
+                    : `${dateStr}: ${data.value.toFixed(0)}ms`;
+                  
+                  return (
+                    <div
+                      key={index}
+                      className={cn(
+                        "flex-1 rounded-t transition-colors cursor-default min-w-[2px]",
+                        data.success 
+                          ? "bg-blue-500/60 hover:bg-blue-500" 
+                          : "bg-red-500/60 hover:bg-red-500"
+                      )}
+                      style={{
+                        height: `${Math.max((data.value / maxResponseTime) * 100, 5)}%`
+                      }}
+                      title={tooltipText}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-sm text-gray-400">
+                <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
+                <span>
+                  {monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
+                    ? `Last ${responseTimeData.length} days`
+                    : `${responseTimeData.length} successful checks`
+                  }
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-24 text-gray-400">
+              No response time data available yet
+            </div>
+          )}
         </CardContent>
       </Card>
 
