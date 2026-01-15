@@ -27,27 +27,36 @@ export function UptimeBar({ uptimeHistory, days = 90, className }: UptimeBarProp
       // Find matching history data
       const historyEntry = uptimeHistory?.find(h => h.date === dateStr);
       
-      if (historyEntry) {
+      if (historyEntry && historyEntry.uptime != null) {
         // Parse uptime as number in case it's a string
         const uptimeValue = typeof historyEntry.uptime === 'string' 
           ? parseFloat(historyEntry.uptime) 
           : historyEntry.uptime;
         
-        let status: 'up' | 'degraded' | 'down' = 'up';
-        if (uptimeValue < 99) status = 'degraded';
-        if (uptimeValue < 90) status = 'down';
-        
-        result.push({
-          date: dateStr,
-          uptime: uptimeValue,
-          status
-        });
+        // Handle NaN from parsing
+        if (isNaN(uptimeValue)) {
+          result.push({
+            date: dateStr,
+            uptime: 100,
+            status: 'no-data'
+          });
+        } else {
+          let status: 'up' | 'degraded' | 'down' = 'up';
+          if (uptimeValue < 99) status = 'degraded';
+          if (uptimeValue < 90) status = 'down';
+          
+          result.push({
+            date: dateStr,
+            uptime: uptimeValue,
+            status
+          });
+        }
       } else {
-        // No data for this day - assume up or show as no-data
+        // No data for this day - show as no-data
         result.push({
           date: dateStr,
           uptime: 100,
-          status: 'up'
+          status: 'no-data'
         });
       }
     }
@@ -73,7 +82,7 @@ export function UptimeBar({ uptimeHistory, days = 90, className }: UptimeBarProp
             day.status === 'no-data' && "bg-muted h-1/3"
           )}
           style={{ height: day.status === 'no-data' ? '33%' : '100%' }}
-          title={`${formatDate(day.date)}: ${day.uptime.toFixed(2)}%`}
+          title={`${formatDate(day.date)}: ${day.status === 'no-data' ? 'No data' : `${day.uptime.toFixed(2)}%`}`}
         />
       ))}
     </div>
