@@ -1,20 +1,20 @@
 # Application configuration
 app:
-  title: "Status - Simon Schubert"
-  description: "Service status for simonschubert.com infrastructure"
+  title: "My Status Page"
+  description: "Service status for my infrastructure"
   logo_url: "/logo.svg"
-  timezone: "Europe/Berlin"
-  noindex: true
+  timezone: "UTC"
+  noindex: false
 
 # UI/UX settings
 ui:
   theme:
-    default_mode: "auto"
+    default_mode: "auto"  # auto, light, or dark
   colors:
-    primary_accent: "#f04a00"
-    secondary_accent: "#E4B62C"
+    primary_accent: "#3b82f6"
+    secondary_accent: "#6366f1"
     background_light: "#F5F5F5"
-    background_dark: "#333333"
+    background_dark: "#1f2937"
     text_on_light: "#000000"
     text_on_light_secondary: "#333333"
     text_on_dark: "#F5F5F5"
@@ -29,10 +29,10 @@ ui:
     show_uptime_bars: true
     default_timeframe: "7d"
 
-# Notification settings
+# Notification settings (optional)
 notifications:
-  webhook_url: https://n8n.simonschubert.com/webhook/status-alerts
-  cooldown: 300
+  webhook_url: ""  # Your webhook URL for alerts
+  cooldown: 300    # Minimum seconds between alerts for same monitor
   template: |
     {
       "service": "[MONITOR_NAME]",

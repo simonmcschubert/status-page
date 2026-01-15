@@ -1,0 +1,50 @@
+# Monitors configuration
+# Each monitor defines a service to check
+
+monitors:
+  # Example HTTP monitor
+  - id: 1
+    name: My Website
+    group: "Web Services"
+    url: https://example.com/
+    type: http
+    interval: 300  # Check every 5 minutes
+    public: true   # Show on public status page
+    conditions:
+      - "[STATUS] == 200"
+      - "[RESPONSE_TIME] < 2000"
+      - "[CERTIFICATE_EXPIRATION] > 7d"
+
+  # Example internal service (private)
+  - id: 2
+    name: Internal API
+    group: "Internal"
+    url: http://localhost:8080/health
+    type: http
+    interval: 60
+    public: false  # Only visible in admin dashboard
+    conditions:
+      - "[STATUS] == 200"
+
+  # Example with scheduled maintenance
+  - id: 3
+    name: Database Server
+    group: "Infrastructure"
+    url: http://localhost:5432/
+    type: tcp
+    interval: 300
+    public: true
+    conditions:
+      - "[RESPONSE_TIME] < 100"
+    maintenance:
+      # Daily maintenance window
+      - type: daily
+        start_time: "03:00"
+        end_time: "03:30"
+        timezone: "UTC"
+        description: "Nightly backup window"
+      # One-time scheduled maintenance
+      # - start: "2026-01-20 10:00"
+      #   end: "2026-01-20 12:00"
+      #   timezone: "UTC"
+      #   description: "Planned upgrade"

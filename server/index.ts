@@ -6,16 +6,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { ConfigLoader } from './config/loader.js';
 import { MonitorRunner } from './monitors/runner.js';
-import { scheduleMonitors, reloadMonitors, shutdownQueue } from './queue/monitor-queue.js';
+import { scheduleMonitors, shutdownQueue } from './queue/monitor-queue.js';
 import { IncidentRepository } from './repositories/incident-repository.js';
 import { CheckRepository } from './repositories/check-repository.js';
 import { StatusHistoryRepository } from './repositories/status-history-repository.js';
 import { MonitorRepository } from './repositories/monitor-repository.js';
 import { MaintenanceRepository } from './repositories/maintenance-repository.js';
 import { scheduleDailyAggregation, scheduleHourlyAggregation, backfillHistoryOnStartup } from './jobs/daily-aggregation.js';
-import { SettingsRepository } from './repositories/settings-repository.js';
 import { AuthService } from './services/auth-service.js';
-import { UserRepository } from './repositories/user-repository.js';
 import { requireAuth } from './middleware/auth.js';
 import { bootstrapAdmin } from './bootstrap.js';
 
@@ -524,34 +522,6 @@ app.get('/api/admin/status', requireAuth, async (req, res) => {
   }
 });
 
-// Get all monitors (admin view - includes all monitors)
-app.get('/api/admin/monitors', requireAuth, async (req, res) => {
-  try {
-    const monitors = await MonitorRepository.getAllMonitors();
-    res.json({ monitors });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch monitors';
-    res.status(500).json({ error: message });
-  }
-});
-
-// Get a single monitor by ID
-app.get('/api/admin/monitors/:id', requireAuth, async (req, res) => {
-  try {
-    const monitorId = parseInt(req.params.id);
-    const monitor = await MonitorRepository.getMonitorById(monitorId);
-    
-    if (!monitor) {
-      return res.status(404).json({ error: 'Monitor not found' });
-    }
-    
-    res.json({ monitor });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch monitor';
-    res.status(500).json({ error: message });
-  }
-});
-
 // Get detailed monitor stats (for admin detail page)
 app.get('/api/admin/monitors/:id/details', requireAuth, async (req, res) => {
   if (!monitorsConfig) {
@@ -621,149 +591,6 @@ app.get('/api/admin/monitors/:id/details', requireAuth, async (req, res) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch monitor details';
-    res.status(500).json({ error: message });
-  }
-});
-
-// Create a new monitor
-app.post('/api/admin/monitors', requireAuth, async (req, res) => {
-  try {
-    const { name, type, url, group, public: isPublic, config, conditions } = req.body;
-    
-    if (!name || !type || !url) {
-      return res.status(400).json({ error: 'Name, type, and URL are required' });
-    }
-    
-    const monitor = await MonitorRepository.create({
-      name,
-      type,
-      url,
-      group,
-      public: isPublic,
-      config,
-      conditions,
-    });
-    
-    // Reload monitors to pick up the new one
-    monitorsConfig = ConfigLoader.loadMonitorsConfig();
-    await reloadMonitors();
-    
-    res.status(201).json({ monitor });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create monitor';
-    res.status(500).json({ error: message });
-  }
-});
-
-// Update a monitor
-app.put('/api/admin/monitors/:id', requireAuth, async (req, res) => {
-  try {
-    const monitorId = parseInt(req.params.id);
-    const { name, type, url, group, public: isPublic, config, conditions } = req.body;
-    
-    const monitor = await MonitorRepository.update(monitorId, {
-      name,
-      type,
-      url,
-      group,
-      public: isPublic,
-      config,
-      conditions,
-    });
-    
-    if (!monitor) {
-      return res.status(404).json({ error: 'Monitor not found' });
-    }
-    
-    // Reload monitors to pick up changes
-    monitorsConfig = ConfigLoader.loadMonitorsConfig();
-    await reloadMonitors();
-    
-    res.json({ monitor });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update monitor';
-    res.status(500).json({ error: message });
-  }
-});
-
-// Delete a monitor
-app.delete('/api/admin/monitors/:id', requireAuth, async (req, res) => {
-  try {
-    const monitorId = parseInt(req.params.id);
-    const deleted = await MonitorRepository.delete(monitorId);
-    
-    if (!deleted) {
-      return res.status(404).json({ error: 'Monitor not found' });
-    }
-    
-    // Reload monitors to remove from schedule
-    monitorsConfig = ConfigLoader.loadMonitorsConfig();
-    await reloadMonitors();
-    
-    res.json({ message: 'Monitor deleted successfully' });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to delete monitor';
-    res.status(500).json({ error: message });
-  }
-});
-
-// Get settings
-app.get('/api/admin/settings', requireAuth, async (req, res) => {
-  try {
-    const settings = await SettingsRepository.get();
-    res.json({ settings });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch settings';
-    res.status(500).json({ error: message });
-  }
-});
-
-// Update settings
-app.put('/api/admin/settings', requireAuth, async (req, res) => {
-  try {
-    const { app: appSettings, notifications } = req.body;
-    
-    const settings = await SettingsRepository.updateAll(
-      appSettings || {},
-      notifications || {}
-    );
-    
-    res.json({ settings });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update settings';
-    res.status(500).json({ error: message });
-  }
-});
-
-// Test a monitor URL without saving
-app.post('/api/admin/test-monitor', requireAuth, async (req, res) => {
-  try {
-    const { type, url, config } = req.body;
-    
-    if (!type || !url) {
-      return res.status(400).json({ error: 'Type and URL are required' });
-    }
-    
-    // Create a temporary monitor config
-    const testMonitor = {
-      id: 0,
-      name: 'Test Monitor',
-      type,
-      url,
-      public: false,
-      ...config,
-    };
-    
-    const results = await MonitorRunner.runChecks([testMonitor]);
-    const result = results[0];
-    
-    res.json({
-      success: result?.success ?? false,
-      responseTime: result?.responseTime ?? null,
-      error: result?.error ?? null,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to test monitor';
     res.status(500).json({ error: message });
   }
 });

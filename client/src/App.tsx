@@ -9,9 +9,6 @@ import { LoginPage } from './pages/admin/LoginPage'
 import { AdminLayout } from './pages/admin/AdminLayout'
 import { AdminStatusPage } from './pages/admin/AdminStatusPage'
 import { AdminMonitorDetailPage } from './pages/admin/AdminMonitorDetailPage'
-import { MonitorsPage } from './pages/admin/MonitorsPage'
-import { MonitorFormPage } from './pages/admin/MonitorFormPage'
-import { SettingsPage } from './pages/admin/SettingsPage'
 
 function App() {
   useEffect(() => {
@@ -109,10 +106,6 @@ function App() {
         >
           <Route index element={<AdminStatusPage />} />
           <Route path="status/:id" element={<AdminMonitorDetailPage />} />
-          <Route path="monitors" element={<MonitorsPage />} />
-          <Route path="monitors/new" element={<MonitorFormPage />} />
-          <Route path="monitors/:id" element={<MonitorFormPage />} />
-          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </AuthProvider>

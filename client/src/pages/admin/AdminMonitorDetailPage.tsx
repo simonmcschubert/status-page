@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Activity, CheckCircle, XCircle, AlertTriangle, Bell, AlertCircle, Wrench, Lock, ExternalLink, Pencil, Clock } from 'lucide-react';
+import { ArrowLeft, Activity, CheckCircle, XCircle, AlertTriangle, Bell, AlertCircle, Wrench, Lock, ExternalLink, Clock } from 'lucide-react';
 import type { Monitor } from '../../types';
 import { UptimeBar } from '../../components/UptimeBar';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -224,13 +224,6 @@ export function AdminMonitorDetailPage() {
               >
                 {getStatusText()}
               </Badge>
-              <Link
-                to={`/admin/monitors/${monitor.id}`}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg text-sm transition-colors"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Link>
             </div>
           </div>
         </CardContent>

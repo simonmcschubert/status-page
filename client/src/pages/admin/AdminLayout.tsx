@@ -3,8 +3,6 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const navItems = [
   { path: '/admin', label: 'Status', exact: true },
-  { path: '/admin/monitors', label: 'Monitors' },
-  { path: '/admin/settings', label: 'Settings' },
 ];
 
 export function AdminLayout() {

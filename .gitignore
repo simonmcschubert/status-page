@@ -8,6 +8,10 @@ package-lock.json
 .env.local
 .env.*.local
 
+# Confiq (user-specific, copy from .example files)
+config/monitors.yml
+config/config.yml
+
 # Data
 data/
 *.db
