@@ -1,4 +1,5 @@
 import type { Monitor, Incident } from '../types'
+import type { Announcement } from '../components/AnnouncementBanner'
 
 const API_BASE = '/api'
 
@@ -18,6 +19,15 @@ export async function fetchIncidents(): Promise<Incident[]> {
   }
   const data = await response.json()
   return data.incidents || []
+}
+
+export async function fetchAnnouncements(): Promise<Announcement[]> {
+  const response = await fetch(`${API_BASE}/announcements`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch announcements')
+  }
+  const data = await response.json()
+  return data.announcements || []
 }
 
 export async function fetchMonitorStats(

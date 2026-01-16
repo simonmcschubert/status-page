@@ -172,4 +172,22 @@ export class IncidentRepository {
     const result = await pool.query(query, [monitorId, limit]);
     return result.rows;
   }
+
+
+  /**
+   * Delete resolved incidents older than the specified number of days
+   * Used for data retention cleanup
+   */
+  static async deleteOldResolvedIncidents(retentionDays: number): Promise<number> {
+    const query = `
+      DELETE FROM incidents
+      WHERE 
+        resolved_at IS NOT NULL
+        AND resolved_at < NOW() - INTERVAL '1 day' * $1
+    `;
+    
+    const result = await pool.query(query, [retentionDays]);
+    return result.rowCount ?? 0;
+  }
+
 }

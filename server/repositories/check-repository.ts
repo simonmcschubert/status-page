@@ -177,4 +177,48 @@ export class CheckRepository {
       success: row.success,
     })).reverse(); // Return in chronological order
   }
+
+
+  /**
+   * Delete checks older than the specified number of days
+   * Used for data retention cleanup
+   */
+  static async deleteOldChecks(retentionDays: number): Promise<number> {
+    const query = `
+      DELETE FROM checks
+      WHERE checked_at < NOW() - INTERVAL '1 day' * $1
+    `;
+    
+    const result = await pool.query(query, [retentionDays]);
+    return result.rowCount ?? 0;
+  }
+
+  /**
+   * Count state transitions (up/down changes) in a time window
+   * Used for flapping detection
+   */
+  static async getStateTransitionsInWindow(
+    monitorId: number,
+    windowMinutes: number
+  ): Promise<number> {
+    const query = `
+      WITH ordered_checks AS (
+        SELECT 
+          status,
+          LAG(status) OVER (ORDER BY checked_at) as prev_status
+        FROM checks
+        WHERE 
+          monitor_id = $1
+          AND checked_at > NOW() - INTERVAL '1 minute' * $2
+        ORDER BY checked_at
+      )
+      SELECT COUNT(*) as transitions
+      FROM ordered_checks
+      WHERE status != prev_status AND prev_status IS NOT NULL
+    `;
+    
+    const result = await pool.query(query, [monitorId, windowMinutes]);
+    return parseInt(result.rows[0]?.transitions ?? '0', 10);
+  }
+
 }

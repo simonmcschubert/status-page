@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { CheckCircle, XCircle, AlertTriangle, Activity, Server, AlertCircle } from 'lucide-react'
 import { MonitorRow } from '../components/MonitorRow'
 import IncidentTimeline from '../components/IncidentTimeline'
+import AnnouncementBanner from '../components/AnnouncementBanner'
+import type { Announcement } from '../components/AnnouncementBanner'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Skeleton } from '../components/ui/skeleton'
-import { fetchMonitors, fetchIncidents } from '../services/api'
+import { fetchMonitors, fetchIncidents, fetchAnnouncements } from '../services/api'
 import { useSmartPolling } from '../hooks/useSmartPolling'
 import { cn } from '../lib/utils'
 import type { Monitor, Incident } from '../types'
@@ -12,18 +14,21 @@ import type { Monitor, Incident } from '../types'
 export default function StatusPage() {
   const [monitors, setMonitors] = useState<Monitor[]>([])
   const [incidents, setIncidents] = useState<Incident[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const loadData = async () => {
     try {
-      const [monitorsData, incidentsData] = await Promise.all([
+      const [monitorsData, incidentsData, announcementsData] = await Promise.all([
         fetchMonitors(),
         fetchIncidents(),
+        fetchAnnouncements(),
       ])
       
       setMonitors(monitorsData)
       setIncidents(incidentsData)
+      setAnnouncements(announcementsData)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
@@ -92,6 +97,13 @@ export default function StatusPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Announcements */}
+      {announcements.length > 0 && (
+        <div className="max-w-4xl mx-auto px-6 pt-6">
+          <AnnouncementBanner announcements={announcements} />
+        </div>
+      )}
+
       {/* Status Banner */}
       <div className={cn(
         "py-8 px-6",

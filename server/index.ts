@@ -13,6 +13,8 @@ import { StatusHistoryRepository } from './repositories/status-history-repositor
 import { MonitorRepository } from './repositories/monitor-repository.js';
 import { MaintenanceRepository } from './repositories/maintenance-repository.js';
 import { scheduleDailyAggregation, scheduleHourlyAggregation, backfillHistoryOnStartup } from './jobs/daily-aggregation.js';
+import { scheduleDataRetention } from './jobs/data-retention.js';
+import type { Announcement } from './config/schemas/app.schema.js';
 import { AuthService } from './services/auth-service.js';
 import { UserRepository } from './repositories/user-repository.js';
 import { requireAuth } from './middleware/auth.js';
@@ -374,6 +376,29 @@ app.get('/api/incidents', async (req, res) => {
   }
 });
 
+// Get active announcements for status page
+app.get('/api/announcements', async (req, res) => {
+  try {
+    const announcements = appConfig?.announcements ?? [];
+    const now = new Date();
+    
+    // Filter to only active announcements within their date range
+    const activeAnnouncements = announcements.filter((a: Announcement) => {
+      if (!a.active) return false;
+      
+      if (a.starts_at && new Date(a.starts_at) > now) return false;
+      if (a.ends_at && new Date(a.ends_at) < now) return false;
+      
+      return true;
+    });
+    
+    res.json({ announcements: activeAnnouncements });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch announcements';
+    res.status(500).json({ error: message });
+  }
+});
+
 // Test endpoint to run checks manually
 app.post('/api/test-check', async (req, res) => {
   if (!monitorsConfig) {
@@ -629,6 +654,11 @@ app.listen(PORT, async () => {
       // Schedule daily and hourly aggregation jobs
       scheduleDailyAggregation();
       scheduleHourlyAggregation();
+      
+      // Schedule data retention cleanup
+      if (appConfig) {
+        scheduleDataRetention(appConfig);
+      }
     } catch (error) {
       console.error('❌ Failed to schedule monitors:', error);
     }

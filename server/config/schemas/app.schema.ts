@@ -47,12 +47,32 @@ const MaintenanceWindowSchema = z.object({
   description: z.string().optional(),
 });
 
+// Data retention schema
+const DataSchema = z.object({
+  retention_days: z.number().min(7).max(365).default(90),
+  incidents_retention_days: z.number().min(30).max(730).default(365),
+}).optional();
+
+// Announcement schema for status page banners
+const AnnouncementSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  message: z.string(),
+  type: z.enum(['info', 'warning', 'maintenance']).default('info'),
+  active: z.boolean().default(true),
+  starts_at: z.string().optional(),
+  ends_at: z.string().optional(),
+});
+
 // Main config schema
 export const AppConfigSchema = z.object({
   app: AppSchema,
   ui: UISchema,
   notifications: NotificationsSchema,
   maintenance: z.array(MaintenanceWindowSchema).optional(),
+  data: DataSchema,
+  announcements: z.array(AnnouncementSchema).optional(),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
+export type Announcement = z.infer<typeof AnnouncementSchema>;
