@@ -209,6 +209,7 @@ app.get('/api/config', async (req, res) => {
     res.json({
       app: mergedConfig.app,
       ui: mergedConfig.ui,
+      footer: mergedConfig.footer,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load config';

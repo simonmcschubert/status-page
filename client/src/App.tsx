@@ -55,7 +55,7 @@ function AppContent() {
         path="/"
         element={
           <div className="min-h-screen bg-background flex flex-col">
-            <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-sm">
+            <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm">
               <div className="max-w-4xl mx-auto px-6 py-4">
                 <Link 
                   to="/" 
@@ -71,7 +71,7 @@ function AppContent() {
               <StatusPage />
             </main>
 
-            <footer className="border-t border-border bg-card">
+            <footer className="bg-card">
               <div className="max-w-4xl mx-auto px-6 py-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <p className="text-sm text-muted-foreground">
@@ -102,7 +102,7 @@ function AppContent() {
         path="/monitor/:id"
         element={
           <div className="min-h-screen bg-background flex flex-col">
-            <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-sm">
+            <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm">
               <div className="max-w-4xl mx-auto px-6 py-4">
                 <Link 
                   to="/" 
@@ -118,7 +118,7 @@ function AppContent() {
               <MonitorDetailPage />
             </main>
 
-            <footer className="border-t border-border bg-card">
+            <footer className="bg-card">
               <div className="max-w-4xl mx-auto px-6 py-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <p className="text-sm text-muted-foreground">
