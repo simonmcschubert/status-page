@@ -26,12 +26,17 @@ A lightweight, self-hosted status page for monitoring your services.
 
 - 🔍 **Multi-protocol monitoring** — HTTP/HTTPS, TCP, WebSocket, DNS, ICMP (ping)
 - 📝 **Flexible conditions** — DSL for health checks with JSONPath support
+- 🔐 **SSL certificate monitoring** — Alert before certificates expire
 - 🎨 **Beautiful UI** — Dark mode, responsive design with Tailwind CSS
 - 📈 **90-day uptime history** — Visual uptime bars with daily aggregation
 - ⏱️ **Response time charts** — Historical performance data
 - 🚨 **Incident tracking** — Automatic incident creation and resolution
+- 🛡️ **False positive prevention** — 2/3 failures required before marking down
 - 🔒 **Private monitors** — Keep internal services hidden from public view
 - 🛠️ **YAML configuration** — Define monitors as code, version control friendly
+- 🔑 **Admin dashboard** — JWT-authenticated admin UI for monitoring
+- 🕐 **Maintenance windows** — Schedule downtime, suppress alerts
+- ⚡ **Smart polling** — Visibility-aware refresh (10s active, 60s background)
 - 🐳 **Docker support** — Easy deployment with Docker Compose
 
 ## 🖼️ Screenshots
