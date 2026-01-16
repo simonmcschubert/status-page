@@ -274,12 +274,7 @@ export function AdminMonitorDetailPage() {
                   return (
                     <div
                       key={index}
-                      className={cn(
-                        "flex-1 rounded-t transition-colors cursor-default min-w-[2px]",
-                        data.success 
-                          ? "bg-blue-500/60 hover:bg-blue-500" 
-                          : "bg-red-500/60 hover:bg-red-500"
-                      )}
+                      className="flex-1 rounded-t transition-colors cursor-default min-w-[2px] bg-[var(--color-chart-bar)] hover:bg-[var(--color-chart-bar-hover)]"
                       style={{
                         height: `${Math.max((data.value / maxResponseTime) * 100, 5)}%`
                       }}
@@ -288,18 +283,18 @@ export function AdminMonitorDetailPage() {
                   );
                 })}
               </div>
-              <div className="flex justify-between text-sm text-gray-400">
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
                 <span>
                   {monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
-                    ? `Last ${responseTimeData.length} days`
-                    : `${responseTimeData.length} successful checks`
+                    ? `Last ${responseTimeData.length} day${responseTimeData.length === 1 ? '' : 's'}`
+                    : `${responseTimeData.length} successful check${responseTimeData.length === 1 ? '' : 's'}`
                   }
                 </span>
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center h-24 text-gray-400">
+            <div className="flex items-center justify-center h-24 text-muted-foreground">
               No response time data available yet
             </div>
           )}

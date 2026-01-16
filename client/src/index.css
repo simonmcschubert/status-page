@@ -24,6 +24,11 @@
   --color-info-bg: rgba(59, 130, 246, 0.1);
   --color-maintenance-bg: rgba(139, 92, 246, 0.1);
   
+  /* Chart colors */
+  --color-chart-bar: #9ca3af;
+  --color-chart-bar-hover: #6b7280;
+  --color-no-data: #6b7280;
+  
   /* Destructive (alias for error) */
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;

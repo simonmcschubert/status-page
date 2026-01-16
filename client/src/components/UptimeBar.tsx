@@ -76,10 +76,10 @@ export function UptimeBar({ uptimeHistory, days = 90, className }: UptimeBarProp
           key={day.date}
           className={cn(
             "flex-1 rounded-sm transition-all hover:opacity-80 cursor-pointer min-w-[2px]",
-            day.status === 'up' && "bg-green-500",
-            day.status === 'degraded' && "bg-yellow-500",
-            day.status === 'down' && "bg-red-500",
-            day.status === 'no-data' && "bg-muted h-1/3"
+            day.status === 'up' && "bg-success",
+            day.status === 'degraded' && "bg-warning",
+            day.status === 'down' && "bg-error",
+            day.status === 'no-data' && "bg-[var(--color-no-data)] h-1/3"
           )}
           style={{ height: day.status === 'no-data' ? '33%' : '100%' }}
           title={`${formatDate(day.date)}: ${day.status === 'no-data' ? 'No data' : `${day.uptime.toFixed(2)}%`}`}

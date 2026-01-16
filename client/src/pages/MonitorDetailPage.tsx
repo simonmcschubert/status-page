@@ -235,12 +235,7 @@ export function MonitorDetailPage() {
                     return (
                       <div
                         key={index}
-                        className={cn(
-                          "flex-1 rounded-t transition-colors cursor-default min-w-[2px]",
-                          data.success 
-                            ? "bg-primary/60 hover:bg-primary" 
-                            : "bg-destructive/60 hover:bg-destructive"
-                        )}
+                        className="flex-1 rounded-t transition-colors cursor-default min-w-[2px] bg-[var(--color-chart-bar)] hover:bg-[var(--color-chart-bar-hover)]"
                         style={{
                           height: `${Math.max((data.value / maxResponseTime) * 100, 5)}%`
                         }}
@@ -253,8 +248,8 @@ export function MonitorDetailPage() {
                   <span>Avg: {avgResponseTime.toFixed(0)}ms</span>
                   <span>
                     {monitor.responseTimeHistory && monitor.responseTimeHistory.length > 0
-                      ? `Last ${responseTimeData.length} days`
-                      : `${responseTimeData.length} successful checks`
+                      ? `Last ${responseTimeData.length} day${responseTimeData.length === 1 ? '' : 's'}`
+                      : `${responseTimeData.length} successful check${responseTimeData.length === 1 ? '' : 's'}`
                     }
                   </span>
                 </div>
