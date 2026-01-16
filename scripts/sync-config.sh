@@ -8,6 +8,9 @@ set -e
 # and reloads the service. Use this for quick config changes
 # without a full deploy.
 
+# SSH options to prevent timeouts and improve reliability
+SSH_OPTS="-o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o BatchMode=yes"
+
 # Get the script's directory and app root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -37,6 +40,16 @@ else
     APP_PATH="/var/www/status-page"
 fi
 
+# Test connection first
+echo "🔌 Testing connection to $SERVER..."
+if ! ssh $SSH_OPTS "$SERVER" "echo 'ok'" > /dev/null 2>&1; then
+    echo "❌ Cannot connect to $SERVER"
+    echo "   Check your network connection and SSH configuration"
+    exit 1
+fi
+echo "  ✓ Connected"
+echo ""
+
 echo "📁 Syncing config files to $SERVER..."
 echo ""
 
@@ -64,22 +77,19 @@ fi
 
 echo ""
 
-# Upload config files
+# Upload config files using scp (simpler than rsync for small files)
 echo "📤 Uploading config files..."
 for file in $CONFIG_FILES; do
-    rsync -avz --rsync-path="sudo rsync" "$file" "$SERVER:$APP_PATH/$file"
+    scp $SSH_OPTS "$file" "$SERVER:/tmp/$(basename $file)"
+    ssh $SSH_OPTS "$SERVER" "sudo mv /tmp/$(basename $file) $APP_PATH/$file"
     echo "  ✓ Uploaded $file"
 done
 
 # Fix ownership and reload service
 echo ""
 echo "🔄 Reloading service..."
-ssh "$SERVER" << REMOTESCRIPT
-    set -e
-    sudo chown -R www-data:www-data $APP_PATH/config/
-    sudo systemctl reload status-page || sudo systemctl restart status-page
-    echo "  ✓ Service reloaded"
-REMOTESCRIPT
+ssh $SSH_OPTS "$SERVER" "sudo chown -R www-data:www-data $APP_PATH/config/ && (sudo systemctl reload status-page || sudo systemctl restart status-page)"
+echo "  ✓ Service reloaded"
 
 echo ""
 echo "✅ Config sync complete!"
