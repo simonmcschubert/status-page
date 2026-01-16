@@ -18,7 +18,7 @@ export function MonitorRow({ monitor }: MonitorRowProps) {
         icon: Wrench,
         label: 'Maintenance',
         variant: 'secondary' as const,
-        iconClass: 'text-blue-400',
+        iconClass: 'text-maintenance',
       };
     }
     if (monitor.currentStatus === 'down') {
@@ -26,7 +26,7 @@ export function MonitorRow({ monitor }: MonitorRowProps) {
         icon: XCircle,
         label: 'Down',
         variant: 'destructive' as const,
-        iconClass: 'text-red-400',
+        iconClass: 'text-error',
       };
     }
     if (monitor.currentStatus === 'degraded') {
@@ -34,14 +34,14 @@ export function MonitorRow({ monitor }: MonitorRowProps) {
         icon: AlertTriangle,
         label: 'Degraded',
         variant: 'warning' as const,
-        iconClass: 'text-yellow-400',
+        iconClass: 'text-warning',
       };
     }
     return {
       icon: CheckCircle,
       label: 'Operational',
       variant: 'success' as const,
-      iconClass: 'text-green-400',
+      iconClass: 'text-success',
     };
   };
 
@@ -74,9 +74,9 @@ export function MonitorRow({ monitor }: MonitorRowProps) {
           <div className="text-right hidden sm:block">
             <div className={cn(
               "text-lg font-semibold tabular-nums",
-              uptimePercent >= 99.9 && "text-green-400",
-              uptimePercent >= 99 && uptimePercent < 99.9 && "text-yellow-400",
-              uptimePercent < 99 && "text-red-400"
+              uptimePercent >= 99.9 && "text-success",
+              uptimePercent >= 99 && uptimePercent < 99.9 && "text-warning",
+              uptimePercent < 99 && "text-error"
             )}>
               {uptimePercent.toFixed(2)}%
             </div>

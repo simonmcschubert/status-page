@@ -8,9 +8,9 @@ const cardVariants = cva(
     variants: {
       variant: {
         default: "border-border",
-        success: "border-green-500/30 bg-green-500/5",
-        warning: "border-yellow-500/30 bg-yellow-500/5",
-        destructive: "border-red-500/30 bg-red-500/5",
+        success: "border-success/30 bg-success/5",
+        warning: "border-warning/30 bg-warning/5",
+        destructive: "border-error/30 bg-error/5",
       },
     },
     defaultVariants: {

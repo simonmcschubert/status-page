@@ -140,10 +140,10 @@ export function MonitorDetailPage() {
 
         {/* Maintenance Banner */}
         {monitor.maintenance?.active && (
-          <Card className="border-blue-500/30 bg-blue-500/5">
+          <Card className="border-maintenance/30 bg-maintenance/5">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <Wrench className="h-5 w-5 text-blue-400" />
+                <Wrench className="h-5 w-5 text-maintenance" />
                 <div>
                   <p className="font-medium text-foreground">Scheduled Maintenance in Progress</p>
                   {monitor.maintenance.description && (
@@ -170,8 +170,8 @@ export function MonitorDetailPage() {
                     "p-2 rounded-full",
                     monitor.currentStatus === 'up' && "bg-success/10 text-success",
                     monitor.currentStatus === 'degraded' && "bg-warning/10 text-warning",
-                    monitor.currentStatus === 'down' && "bg-destructive/10 text-destructive",
-                    monitor.currentStatus === 'maintenance' && "bg-blue-500/10 text-blue-400"
+                    monitor.currentStatus === 'down' && "bg-error/10 text-error",
+                    monitor.currentStatus === 'maintenance' && "bg-maintenance/10 text-maintenance"
                   )}>
                     {getStatusIcon()}
                   </div>
