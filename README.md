@@ -1,10 +1,3 @@
----
-name: statusbeacon
-description: A lightweight, self-hosted status page for monitoring services
-github_repo: https://github.com/simonmcschubert/statusbeacon
-license: MIT
----
-
 <div align="center">
 
 # 📊 StatusBeacon
@@ -16,7 +9,7 @@ A lightweight, self-hosted status page for monitoring your services.
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-[Live Demo](https://status.simonschubert.com) · [Documentation](#configuration) · [Report Bug](https://github.com/simonmcschubert/statusbeacon/issues)
+[Live Demo](https://status.simonschubert.com) · [Report Bug](https://github.com/simonmcschubert/statusbeacon/issues)
 
 </div>
 
