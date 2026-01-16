@@ -31,11 +31,22 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
-// Serve static frontend files
+// Serve static frontend files with efficient caching
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDistPath = path.join(__dirname, '../../client/dist');
-app.use(express.static(clientDistPath));
+
+// Cache hashed assets (JS, CSS) for 1 year (immutable)
+app.use('/assets', express.static(path.join(clientDistPath, 'assets'), {
+  maxAge: '1y',
+  immutable: true,
+}));
+
+// Cache other static files for 1 hour, revalidate
+app.use(express.static(clientDistPath, {
+  maxAge: '1h',
+  etag: true,
+}));
 
 // Load configurations
 let appConfig;

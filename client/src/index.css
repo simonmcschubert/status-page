@@ -10,19 +10,19 @@
   --color-secondary: #E4B62C;
   --color-secondary-foreground: #000000;
   
-  /* Status colors */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
-  --color-maintenance: #8b5cf6;
+  /* Status colors - high contrast versions for text */
+  --color-success: #047857;
+  --color-warning: #b45309;
+  --color-error: #dc2626;
+  --color-info: #1d4ed8;
+  --color-maintenance: #6d28d9;
   
-  /* Status background colors (10% opacity versions) */
-  --color-success-bg: rgba(16, 185, 129, 0.1);
-  --color-warning-bg: rgba(245, 158, 11, 0.1);
-  --color-error-bg: rgba(239, 68, 68, 0.1);
-  --color-info-bg: rgba(59, 130, 246, 0.1);
-  --color-maintenance-bg: rgba(139, 92, 246, 0.1);
+  /* Status background colors - light tinted backgrounds */
+  --color-success-bg: #d1fae5;
+  --color-warning-bg: #fef3c7;
+  --color-error-bg: #fee2e2;
+  --color-info-bg: #dbeafe;
+  --color-maintenance-bg: #ede9fe;
   
   /* Chart colors */
   --color-chart-bar: #9ca3af;
@@ -30,7 +30,7 @@
   --color-no-data: #6b7280;
   
   /* Destructive (alias for error) */
-  --color-destructive: #ef4444;
+  --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
   
   /* Border radius */

@@ -1,15 +1,26 @@
 import { Routes, Route, Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { Activity } from 'lucide-react'
 import StatusPage from './pages/StatusPage'
 import { MonitorDetailPage } from './pages/MonitorDetailPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { ConfigProvider, useConfig } from './contexts/ConfigContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
-import { LoginPage } from './pages/admin/LoginPage'
-import { AdminLayout } from './pages/admin/AdminLayout'
-import { AdminStatusPage } from './pages/admin/AdminStatusPage'
-import { AdminMonitorDetailPage } from './pages/admin/AdminMonitorDetailPage'
+
+// Lazy load admin pages to reduce initial bundle size
+const LoginPage = lazy(() => import('./pages/admin/LoginPage').then(m => ({ default: m.LoginPage })))
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })))
+const AdminStatusPage = lazy(() => import('./pages/admin/AdminStatusPage').then(m => ({ default: m.AdminStatusPage })))
+const AdminMonitorDetailPage = lazy(() => import('./pages/admin/AdminMonitorDetailPage').then(m => ({ default: m.AdminMonitorDetailPage })))
+
+// Loading fallback for lazy-loaded components
+function AdminLoading() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-muted-foreground">Loading...</div>
+    </div>
+  )
+}
 
 function AppContent() {
   const { config } = useConfig()
@@ -99,18 +110,32 @@ function AppContent() {
         }
       />
 
-      {/* Admin routes */}
-      <Route path="/admin/login" element={<LoginPage />} />
+      {/* Admin routes - lazy loaded */}
+      <Route path="/admin/login" element={
+        <Suspense fallback={<AdminLoading />}>
+          <LoginPage />
+        </Suspense>
+      } />
       <Route
         path="/admin"
         element={
           <ProtectedRoute>
-            <AdminLayout />
+            <Suspense fallback={<AdminLoading />}>
+              <AdminLayout />
+            </Suspense>
           </ProtectedRoute>
         }
       >
-        <Route index element={<AdminStatusPage />} />
-        <Route path="status/:id" element={<AdminMonitorDetailPage />} />
+        <Route index element={
+          <Suspense fallback={<AdminLoading />}>
+            <AdminStatusPage />
+          </Suspense>
+        } />
+        <Route path="status/:id" element={
+          <Suspense fallback={<AdminLoading />}>
+            <AdminMonitorDetailPage />
+          </Suspense>
+        } />
       </Route>
     </Routes>
   )

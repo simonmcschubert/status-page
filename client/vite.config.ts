@@ -11,6 +11,25 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    // Code splitting for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunk for React core
+          'react-vendor': ['react', 'react-dom'],
+          // Router chunk
+          'router': ['react-router-dom'],
+        },
+      },
+    },
+    // Target modern browsers only
+    target: 'es2020',
+    // Minification (esbuild is faster and default)
+    minify: 'esbuild',
+    // Generate source maps for debugging (optional)
+    sourcemap: false,
+  },
   server: {
     proxy: {
       '/api': {
