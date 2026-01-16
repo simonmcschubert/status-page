@@ -42,3 +42,8 @@ notifications:
       "timestamp": "[TIMESTAMP]",
       "incident_id": "[INCIDENT_ID]"
     }
+# Deployment configuration (used by scripts/deploy.sh)
+deploy:
+  server: "user@your-server.com"  # SSH destination
+  path: "/var/www/status-page"    # Remote installation path
+  service: "status-page"          # systemd service name
