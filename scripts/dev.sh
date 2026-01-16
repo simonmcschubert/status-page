@@ -3,6 +3,9 @@ set -e
 
 # Development script for status-page
 # Runs both backend and frontend in development mode
+# Usage:
+# ./scripts/dev.sh
+
 
 # Get the script's directory and app root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
