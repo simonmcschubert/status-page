@@ -36,7 +36,8 @@ export class PingChecker {
       // macOS/Linux: time=X.XXX ms
       // Windows: time=XXms or time<1ms
       const timeMatch = stdout.match(/time[=<](\d+\.?\d*)/i);
-      const pingTime = timeMatch ? parseFloat(timeMatch[1]) : responseTime;
+      // Round to integer - database column is INTEGER, sub-ms precision not needed
+      const pingTime = timeMatch ? Math.round(parseFloat(timeMatch[1])) : responseTime;
 
       // Check if ping was successful (0% packet loss)
       const success = stdout.includes('1 received') || 
