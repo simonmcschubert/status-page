@@ -62,7 +62,7 @@ cp config/monitors.example.yml config/monitors.yml
 docker-compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view your status page.
+Open [http://localhost:3001](http://localhost:3001) to view your status page.
 
 ### Manual Installation
 
@@ -96,7 +96,7 @@ cp config/monitors.example.yml config/monitors.yml
 # Edit config files as needed
 
 # Start development servers
-npm run dev          # Backend on :3000
+npm run dev          # Backend on :3001
 cd client && npm run dev  # Frontend on :5173
 ```
 
@@ -119,7 +119,7 @@ app:
 
 # Infrastructure (alternative to .env)
 server:
-  port: 3000
+  port: 3001
   node_env: production
 
 database:
@@ -151,7 +151,7 @@ ADMIN_PASSWORD=secure_password  # Only needed on first run
 # Optional: Override config.yml settings
 # DATABASE_URL=postgresql://...
 # REDIS_URL=redis://...
-# PORT=3000
+# PORT=3001
 
 # External config paths (for separate config deployment)
 # CONFIG_PATH=/var/data/statusbeacon/config.yml

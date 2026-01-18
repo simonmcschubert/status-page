@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Server configuration schema (for hybrid .env approach)
 const ServerSchema = z.object({
-  port: z.number().default(3000),
+  port: z.number().default(3001),
   node_env: z.enum(['development', 'production', 'test']).default('development'),
 }).optional();
 

@@ -73,7 +73,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Start backend
-echo "🔧 Starting backend on port 3000..."
+echo "🔧 Starting backend on port 3001..."
 npm run dev &
 BACKEND_PID=$!
 
@@ -89,7 +89,7 @@ cd "$APP_DIR"
 
 echo ""
 echo "✅ Development servers running:"
-echo "   Backend:  http://localhost:3000"
+echo "   Backend:  http://localhost:3001"
 echo "   Frontend: http://localhost:5173"
 echo ""
 echo "Press Ctrl+C to stop"

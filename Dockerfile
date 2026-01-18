@@ -18,6 +18,6 @@ RUN npm ci --production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server ./server
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD ["node", "dist/server/index.js"]

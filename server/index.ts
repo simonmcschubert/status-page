@@ -49,7 +49,7 @@ app.use(express.static(clientDistPath, {
 }));
 
 // Load configurations
-let PORT = 3000;
+let PORT = 3001;
 
 // Helpers to get current config (always fresh from ConfigLoader for hot reload support)
 const getMonitorsConfig = () => ConfigLoader.getMonitorsConfig();
@@ -62,11 +62,11 @@ try {
   const appConfig = getAppConfig();
   
   // Get PORT from config or env var
-  PORT = appConfig.server?.port || parseInt(process.env.PORT || '3000');
+  PORT = appConfig.server?.port || parseInt(process.env.PORT || '3001');
   
   console.log(`📋 Loaded ${getMonitorsConfig().monitors.length} monitors`);
 } catch (_error) {
-  PORT = parseInt(process.env.PORT || '3000');
+  PORT = parseInt(process.env.PORT || '3001');
   console.error('⚠️  Failed to load config files. Using example configs.');
   console.error('   Copy config.example.yml to config.yml and monitors.example.yml to monitors.yml');
 }
