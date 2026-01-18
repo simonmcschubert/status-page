@@ -1,5 +1,4 @@
 import axios from 'axios';
-import https from 'https';
 import tls from 'tls';
 import type { ConditionContext } from '../condition-evaluator.js';
 

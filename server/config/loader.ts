@@ -2,7 +2,7 @@ import fs from 'fs';
 import yaml from 'js-yaml';
 import { AppConfigSchema, type AppConfig } from './schemas/app.schema.js';
 import { MonitorsConfigSchema, type MonitorsConfig } from './schemas/monitors.schema.js';
-import { SettingsRepository, type AppSettings } from '../repositories/settings-repository.js';
+import { SettingsRepository } from '../repositories/settings-repository.js';
 import { CONFIG_PATHS } from './paths.js';
 
 export class ConfigLoader {
@@ -73,7 +73,7 @@ export class ConfigLoader {
         // Pass through footer from YAML (not stored in DB)
         footer: yamlConfig.footer,
       };
-    } catch (error) {
+    } catch (_error) {
       // If database is not available, fall back to YAML only
       console.warn('⚠️ Could not load database settings, using YAML config only');
       return yamlConfig;

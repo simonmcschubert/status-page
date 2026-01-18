@@ -61,7 +61,7 @@ try {
   PORT = appConfig.server?.port || parseInt(process.env.PORT || '3000');
   
   console.log(`📋 Loaded ${monitorsConfig.monitors.length} monitors`);
-} catch (error) {
+} catch (_error) {
   PORT = parseInt(process.env.PORT || '3000');
   console.error('⚠️  Failed to load config files. Using example configs.');
   console.error('   Copy config.example.yml to config.yml and monitors.example.yml to monitors.yml');
@@ -120,7 +120,7 @@ app.post('/api/auth/logout', async (req, res) => {
 
     res.clearCookie('refreshToken');
     res.json({ message: 'Logged out successfully' });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Logout failed' });
   }
 });
@@ -145,7 +145,7 @@ app.post('/api/auth/refresh', async (req, res) => {
       user: result.user,
       accessToken: result.accessToken,
     });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Token refresh failed' });
   }
 });
@@ -160,7 +160,7 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
     }
 
     res.json({ user });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to get user' });
   }
 });
@@ -190,7 +190,7 @@ app.put('/api/auth/password', requireAuth, async (req, res) => {
 
     res.clearCookie('refreshToken');
     res.json({ message: 'Password changed successfully. Please log in again.' });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to change password' });
   }
 });
@@ -200,7 +200,7 @@ app.get('/api/auth/setup-required', async (req, res) => {
   try {
     const userCount = await UserRepository.count();
     res.json({ setupRequired: userCount === 0 });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to check setup status' });
   }
 });
@@ -375,7 +375,7 @@ app.get('/api/status', async (req, res) => {
         error: r.error,
       })),
     });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to run checks' });
   }
 });

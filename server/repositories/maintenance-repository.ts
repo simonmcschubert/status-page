@@ -1,5 +1,5 @@
 import pool from '../db/index.js';
-import type { MaintenanceWindow as ConfigMaintenanceWindow } from '../config/schemas/monitors.schema.js';
+import type { MaintenanceWindow as _ConfigMaintenanceWindow } from '../config/schemas/monitors.schema.js';
 
 export interface MaintenanceWindow {
   id: number;

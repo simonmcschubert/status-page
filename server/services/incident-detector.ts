@@ -110,7 +110,7 @@ export class IncidentDetector {
    * Check if a monitor is flapping (alternating between up/down rapidly)
    * This helps prevent notification spam
    */
-  static async isFlapping(monitorId: number, windowMinutes: number = 15): Promise<boolean> {
+  static async isFlapping(monitorId: number, _windowMinutes: number = 15): Promise<boolean> {
     const recentChecks = await CheckRepository.getRecentChecks(
       monitorId,
       20 // Check last 20 results
