@@ -68,12 +68,15 @@ ssh -t "$SERVER" bash -s "$APP_PATH" << 'REMOTESCRIPT'
     sudo -u www-data git reset --hard origin/main
     
     echo "  → Installing dependencies..."
-    sudo -u www-data npm ci --omit=dev
+    sudo -u www-data npm ci
     cd client && sudo -u www-data npm ci && cd ..
     
     echo "  → Building..."
     sudo -u www-data npm run build
     cd client && sudo -u www-data npm run build && cd ..
+    
+    echo "  → Pruning dev dependencies..."
+    sudo -u www-data npm prune --omit=dev
 REMOTESCRIPT
 echo "  ✓ Code deployed"
 echo ""
@@ -82,9 +85,10 @@ echo ""
 if [ -f "$SCRIPT_DIR/config.yml" ] || [ -f "$SCRIPT_DIR/monitors.yml" ]; then
     echo "📤 Uploading config files..."
     ssh "$SERVER" "sudo mkdir -p $CONFIG_PATH && sudo chown www-data:www-data $CONFIG_PATH"
-    [ -f "$SCRIPT_DIR/config.yml" ] && scp "$SCRIPT_DIR/config.yml" "$SERVER:$CONFIG_PATH/"
-    [ -f "$SCRIPT_DIR/monitors.yml" ] && scp "$SCRIPT_DIR/monitors.yml" "$SERVER:$CONFIG_PATH/"
-    ssh "$SERVER" "sudo chown www-data:www-data $CONFIG_PATH/*.yml 2>/dev/null || true"
+    # Upload to /tmp first, then move with sudo (avoids permission issues)
+    [ -f "$SCRIPT_DIR/config.yml" ] && scp "$SCRIPT_DIR/config.yml" "$SERVER:/tmp/"
+    [ -f "$SCRIPT_DIR/monitors.yml" ] && scp "$SCRIPT_DIR/monitors.yml" "$SERVER:/tmp/"
+    ssh "$SERVER" "sudo mv /tmp/config.yml /tmp/monitors.yml $CONFIG_PATH/ 2>/dev/null || true && sudo chown www-data:www-data $CONFIG_PATH/*.yml 2>/dev/null || true"
     echo "  ✓ Config files uploaded"
     echo ""
 fi
